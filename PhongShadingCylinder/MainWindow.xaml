@@ -7,6 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="100" />
+        </Grid.ColumnDefinitions>
 
+        <Canvas x:Name="Scene">
+
+        </Canvas>
     </Grid>
 </Window>

@@ -12,11 +12,11 @@ namespace PhongShadingCylinder.Transformations
         {
             var result = input;
             if (angles.X != 0)
-                result = RotateXAxis(result, angleToRadians(angles.X));
+                result = RotateXAxis(result, AngleToRadians(angles.X));
             if (angles.Y != 0)
-                result = RotateYAxis(result, angleToRadians(angles.Y));
+                result = RotateYAxis(result, AngleToRadians(angles.Y));
             if (angles.Z != 0)
-                result = RotateZAxis(result, angleToRadians(angles.Z));
+                result = RotateZAxis(result, AngleToRadians(angles.Z));
             return result;
         }
 
@@ -88,7 +88,7 @@ namespace PhongShadingCylinder.Transformations
                             0, 0, 0, 1);
         }
 
-        private static float angleToRadians(float angle)
+        public static float AngleToRadians(float angle)
         {
             return MathF.PI * angle / 360f;
         }
