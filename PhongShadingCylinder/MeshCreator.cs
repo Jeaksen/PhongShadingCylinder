@@ -23,7 +23,9 @@ namespace PhongShadingCylinder
             var bottomCapSidePoints = new List<Vertex>();
             var topCapRimPoints = new List<Vertex>();
             var topCapSidePoints = new List<Vertex>();
-            var triangles = new List<Triangle>();
+            var trianglesSide = new List<Triangle>();
+            var trianglesBottom = new List<Triangle>();
+            var trianglesTop = new List<Triangle>();
             float angle = 0;
             float deltaAngle = MathF.PI * 2 / circleDivisionPoints;
             var bottomCapNormal = new Vector3(0, -1, 0);
@@ -63,11 +65,11 @@ namespace PhongShadingCylinder
 
                 var triangleSide2Top1Bottom = new Triangle(topCapSidePoints[idxFirst], bottomCapSidePoints[idxFirst], topCapSidePoints[idxSecond]);
                 var triangleSide2Bottom1Top = new Triangle(bottomCapSidePoints[idxFirst], bottomCapSidePoints[idxSecond], topCapSidePoints[idxSecond]);
-                
-                triangles.Add(triangleBottomCap);
-                triangles.Add(triangleTopCap);
-                triangles.Add(triangleSide2Top1Bottom);
-                triangles.Add(triangleSide2Bottom1Top);
+
+                trianglesBottom.Add(triangleBottomCap);
+                trianglesTop.Add(triangleTopCap);
+                trianglesSide.Add(triangleSide2Top1Bottom);
+                trianglesSide.Add(triangleSide2Bottom1Top);
             }
 
             var mesh = new Mesh();
@@ -75,7 +77,9 @@ namespace PhongShadingCylinder
             mesh.Vertices.AddRange(bottomCapRimPoints);
             mesh.Vertices.AddRange(topCapRimPoints);
             mesh.Vertices.AddRange(topCapSidePoints);
-            mesh.Triangles.AddRange(triangles);
+            mesh.Triangles.AddRange(trianglesBottom);
+            mesh.Triangles.AddRange(trianglesTop);
+            mesh.Triangles.AddRange(trianglesSide);
 
             return mesh;
         }
@@ -84,10 +88,9 @@ namespace PhongShadingCylinder
     public class Mesh
     {
         public List<Vertex> Vertices { get; set; } = new List<Vertex>();
-
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
-    }
 
+    }
     public class Triangle
     {
         public Vertex[] Vertices { get; private set; } = new Vertex[3];
@@ -117,7 +120,7 @@ namespace PhongShadingCylinder
             Normal = normal;
         }
 
-        public Vertex Clone(Vertex vertex)
+        public Vertex Clone()
         {
             return new Vertex(Position, Normal);
         }

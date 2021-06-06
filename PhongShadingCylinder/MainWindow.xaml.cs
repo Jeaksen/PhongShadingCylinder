@@ -1,5 +1,6 @@
 ﻿using PhongShadingCylinder.Transformations;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Media;
@@ -9,71 +10,86 @@ namespace PhongShadingCylinder
 {
     public partial class MainWindow : Window
     {
-        Vector4 pointFrontLeftBottom;
-        Vector4 pointFrontRightBottom;
-        Vector4 pointFrontLeftTop;
-        Vector4 pointFrontRightTop;
-        Vector4 pointBackLeftBottom;
-        Vector4 pointBackRightBottom;
-        Vector4 pointBackLeftTop;
-        Vector4 pointBackRightTop;
-        Vector4 pointDiamondTop;
-        Vector4 pointDiamondBottom;
-
-        private float SizeX = 30, SizeY = 30, SizeZ = 40;
-        private float angle = 0;
         private float deltaAngle = 1;
+        private float angleX = 0;
+        private float angleY = 0;
+        private float angleZ = 0;
         private Matrix4x4 transformMatrix;
+        private Mesh mesh = null;
+        private MeshCreator meshCreator = new MeshCreator();
 
         private new float Width => (float)base.Width;
         private new float Height => (float)base.Height;
 
+        public bool DrawNormals { get; set; }
+        public bool FillTriangles { get; set; }
+        public bool DrawLines { get; set; } = true;
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
-            InitializePoints();
             var dispatcherTimer = new System.Windows.Threading.DispatcherTimer();
             dispatcherTimer.Tick += new EventHandler(rotateShape);
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0, 0, 20);
             dispatcherTimer.Start();
-            //var meshCreator = new MeshCreator();
-            //var mesh = meshCreator.CreateCylinderMesh(10, 10, new Vector3(0, 0, 0), 5);
-        }
+            mesh = meshCreator.CreateCylinderMesh(40, 70, new Vector3(0, 0, 0), 40);
 
+            CalclateTransformMatrix();
+            DrawCylinder();
+        }
         private void rotateShape(object sender, EventArgs e)
         {
-            Redraw();
-            angle += deltaAngle;
-        }
-
-        private void InitializePoints()
-        {
-            pointFrontLeftBottom = new Vector4(-SizeX, -SizeY, -SizeZ, 1);
-            pointFrontRightBottom = new Vector4(SizeX, -SizeY, -SizeZ, 1);
-            pointFrontLeftTop = new Vector4(-SizeX, SizeY, -SizeZ, 1);
-            pointFrontRightTop = new Vector4(SizeX, SizeY, -SizeZ, 1);
-            pointBackLeftBottom = new Vector4(-SizeX, -SizeY, SizeZ, 1);
-            pointBackRightBottom = new Vector4(SizeX, -SizeY, SizeZ, 1);
-            pointBackLeftTop = new Vector4(-SizeX, SizeY, SizeZ, 1);
-            pointBackRightTop = new Vector4(SizeX, SizeY, SizeZ, 1);
-            pointDiamondTop = new Vector4(0, 2 * SizeY, 0, 1);
-            pointDiamondBottom = new Vector4(0, -2 * SizeY, 0, 1);
-        }
-
-        private void Redraw()
-        {
+            angleX += deltaAngle;
             Scene.Children.Clear();
             CalclateTransformMatrix();
-            DrawDiamond();
+            DrawCylinder();
         }
+
+        private void DrawCylinder()
+        {
+            DrawTriangles(mesh.Triangles);
+            //DrawTriangles(mesh.TrianglesSide);
+            //DrawTriangles(mesh.TrianglesBottom);
+            //DrawTriangles(mesh.TrianglesTop);
+        }
+
+        private void DrawTriangles(List<Triangle> trainagles)
+        {
+            foreach (var triangle in trainagles)
+            {
+                var p1 = Project(triangle.Vertices[0].Position);
+                var p2 = Project(triangle.Vertices[1].Position);
+                var p3 = Project(triangle.Vertices[2].Position);
+                DrawTriangle(p1, p2, p3);
+                if (DrawNormals)
+                {
+                    var p1Normal = Project(GetNormalEndPoint(triangle.Vertices[0]));
+                    var p2Normal = Project(GetNormalEndPoint(triangle.Vertices[1]));
+                    var p3Normal = Project(GetNormalEndPoint(triangle.Vertices[2]));
+                    DrawLine(p1, p1Normal);
+                    DrawLine(p2, p2Normal);
+                    DrawLine(p3, p3Normal);
+                }
+            }
+        }
+
+        private Vector3 GetNormalEndPoint(Vertex vertex)
+        {
+            var scale = 10;
+            return new Vector3 (vertex.Position.X + scale * vertex.Normal.X,
+                                vertex.Position.Y + scale * vertex.Normal.Y,
+                                vertex.Position.Z + scale * vertex.Normal.Z);
+        }
+
 
         private void CalclateTransformMatrix()
         {
-            var angleRadians = Rotator.AngleToRadians(angle);
+            var angleRadiansX = Rotator.AngleToRadians(angleX);
+            var angleRadiansY = Rotator.AngleToRadians(angleY);
+            var angleRadiansZ = Rotator.AngleToRadians(angleZ);
             
             transformMatrix = (
-                                Rotator.RotationMatrix(new Vector3(0, angleRadians, 0))
+                                Rotator.RotationMatrix(new Vector3(angleRadiansX, angleRadiansY, angleRadiansZ))
                                 * 
                                 Translator.TranslationMatrix(new Vector3(0, 0, 150))
                               )
@@ -81,7 +97,7 @@ namespace PhongShadingCylinder
                                 PerspectiveProjector.ProjectionMatrix(Width, Height);
         }
 
-        private Vector2 Project(Vector4 vector)
+        private Vector2 Project(Vector3 vector)
         {
             var tempRes = Vector4.Transform(vector, transformMatrix);
             var result3d = PerspectiveProjector.Normalize(tempRes);
@@ -98,112 +114,26 @@ namespace PhongShadingCylinder
             line.Y2 = p2.Y;
             line.Stroke = Brushes.Pink;
             line.StrokeThickness = 3;
-            line.StrokeEndLineCap = PenLineCap.Round;
+            line.StrokeEndLineCap = PenLineCap.Triangle;
             Scene.Children.Add(line);
         }
 
-        private void DrawDiamond()
+        private void DrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3)
         {
-            // FRONT
-            DrawLine(Project(pointFrontLeftBottom),
-                    Project(pointFrontRightBottom));
-
-            DrawLine(Project(pointFrontLeftBottom),
-                    Project(pointFrontLeftTop));
-
-            DrawLine(Project(pointFrontRightTop),
-                    Project(pointFrontLeftTop));
-
-            DrawLine(Project(pointFrontRightTop),
-                    Project(pointFrontRightBottom));
-
-            // SIDES
-            DrawLine(Project(pointFrontLeftBottom),
-                    Project(pointBackLeftBottom));
-
-            DrawLine(Project(pointFrontRightBottom),
-                    Project(pointBackRightBottom));
-
-            DrawLine(Project(pointFrontLeftTop),
-                    Project(pointBackLeftTop));
-
-            DrawLine(Project(pointFrontRightTop),
-                    Project(pointBackRightTop));
-
-            // BACK
-
-            DrawLine(Project(pointBackLeftBottom),
-                    Project(pointBackRightBottom));
-
-            DrawLine(Project(pointBackLeftBottom),
-                    Project(pointBackLeftTop));
-
-            DrawLine(Project(pointBackRightTop),
-                    Project(pointBackLeftTop));
-
-            DrawLine(Project(pointBackRightTop),
-                    Project(pointBackRightBottom));
-
-            // TOP DIAMOND
-
-            DrawLine(Project(pointDiamondTop),
-                    Project(pointBackLeftTop));
-
-            DrawLine(Project(pointDiamondTop),
-                    Project(pointBackRightTop));
-
-            DrawLine(Project(pointDiamondTop),
-                    Project(pointFrontLeftTop));
-
-            DrawLine(Project(pointDiamondTop),
-                    Project(pointFrontRightTop));
-
-            // BOTTOM DIAMOND
-
-            DrawLine(Project(pointDiamondBottom),
-                    Project(pointBackLeftBottom));
-
-            DrawLine(Project(pointDiamondBottom),
-                    Project(pointBackRightBottom));
-
-            DrawLine(Project(pointDiamondBottom),
-                    Project(pointFrontLeftBottom));
-
-            DrawLine(Project(pointDiamondBottom),
-                    Project(pointFrontRightBottom));
-
+            var poly = new Polygon();
+            var points = new PointCollection();
+            points.Add(new Point(p1.X, p1.Y));
+            points.Add(new Point(p2.X, p2.Y));
+            points.Add(new Point(p3.X, p3.Y));
+            poly.Points = points;
+            poly.Stroke = Brushes.Pink;
+            if (DrawLines)
+                poly.StrokeThickness = 1;
+            else
+                poly.StrokeThickness = 0;
+            if (FillTriangles)
+                poly.Fill = Brushes.Blue;
+            Scene.Children.Add(poly);
         }
-
-
-        //private void rotateShape(object sender, EventArgs e)
-        //{
-        //    Scene.Children.Clear();
-        //    if (one)
-        //    {
-        //        var poly = new Polygon();
-        //        var points = new PointCollection();
-        //        points.Add(new Point(0, 0));
-        //        points.Add(new Point(100, 0));
-        //        points.Add(new Point(0, 100));
-        //        poly.Points = points;
-        //        poly.Stroke = Brushes.Black;
-        //        poly.StrokeThickness = 2;
-        //        poly.Fill = Brushes.Blue;
-        //        one = false;
-        //        Scene.Children.Add(poly);
-        //    }
-        //    else
-        //    {
-        //        var line = new Line();
-        //        line.X1 = 0;
-        //        line.Y1 = 0;
-        //        line.X2 = 100;
-        //        line.Y2 = 150;
-        //        line.Stroke = Brushes.Pink;
-        //        line.StrokeThickness = 3;
-        //        one = true;
-        //        Scene.Children.Add(line);
-        //    }
-        //}
     }
 }
