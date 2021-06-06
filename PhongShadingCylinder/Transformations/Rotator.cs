@@ -90,7 +90,7 @@ namespace PhongShadingCylinder.Transformations
 
         public static float AngleToRadians(float angle)
         {
-            return MathF.PI * angle / 360f;
+            return MathF.PI * angle / 180f;
         }
     }
 }
