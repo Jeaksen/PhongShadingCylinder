@@ -5,16 +5,15 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PhongShadingCylinder"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="450" Width="800"
+        MouseMove="Scene_MouseMove" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" MouseWheel="Window_MouseWheel">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition Width="150" />
         </Grid.ColumnDefinitions>
 
-        <Canvas x:Name="Scene">
-
-        </Canvas>
+        <Canvas x:Name="Scene" />
         <GroupBox Grid.Column="1" Header="Options">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -28,6 +27,22 @@
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Draw lines " />
                     <CheckBox IsChecked="{Binding DrawLines}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Position X " />
+                    <TextBlock Text="{Binding PositionX}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Position X " />
+                    <TextBlock Text="{Binding PositionY}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Angle X " />
+                    <TextBlock Text="{Binding AngleX}" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Angle Y " />
+                    <TextBlock Text="{Binding AngleY}" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
 
