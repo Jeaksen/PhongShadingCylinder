@@ -78,8 +78,11 @@ namespace PhongShadingCylinder
             mesh.Vertices.AddRange(topCapRimPoints);
             mesh.Vertices.AddRange(topCapSidePoints);
             mesh.Triangles.AddRange(trianglesBottom);
+            mesh.TrianglesBottom.AddRange(trianglesBottom);
             mesh.Triangles.AddRange(trianglesTop);
+            mesh.TrianglesTop.AddRange(trianglesTop);
             mesh.Triangles.AddRange(trianglesSide);
+            mesh.TrianglesSide.AddRange(trianglesSide);
 
             return mesh;
         }
@@ -89,6 +92,9 @@ namespace PhongShadingCylinder
     {
         public List<Vertex> Vertices { get; set; } = new List<Vertex>();
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
+        public List<Triangle> TrianglesTop { get; set; } = new List<Triangle>();
+        public List<Triangle> TrianglesBottom { get; set; } = new List<Triangle>();
+        public List<Triangle> TrianglesSide { get; set; } = new List<Triangle>();
 
     }
     public class Triangle

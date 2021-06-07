@@ -202,7 +202,6 @@ namespace PhongShadingCylinder
         }
 
 
-
         public MainWindow()
         {
             InitializeComponent();
@@ -283,7 +282,7 @@ namespace PhongShadingCylinder
         private void Scene_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             var vector = new Vector3(0, 0, e.Delta * ScrollDistanceMultiplier);
-            var rotated = Rotator.Rotate(vector, -CameraRotation);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
             CameraPosition += rotated;
         }
 
@@ -315,6 +314,8 @@ namespace PhongShadingCylinder
         {
             foreach (var triangle in trainagles)
             {
+                if (!IsTriangleVisible(triangle))
+                    continue;
                 var p1 = Project(triangle.Vertices[0].Position);
                 var p2 = Project(triangle.Vertices[1].Position);
                 var p3 = Project(triangle.Vertices[2].Position);
@@ -335,6 +336,18 @@ namespace PhongShadingCylinder
                     }
                 }
             }
+        }
+
+        private bool IsTriangleVisible(Triangle triangle)
+        {
+            return IsVertexVisible(triangle.Vertices[0]) 
+                && IsVertexVisible(triangle.Vertices[1]) 
+                && IsVertexVisible(triangle.Vertices[2]);
+        }
+
+        private bool IsVertexVisible(Vertex vertex)
+        {
+            return Vector3.Dot(vertex.Normal, GetVectorToCamera(vertex.Position)) > 0;
         }
 
         private Vector2? Project(Vector3 vector)
@@ -359,6 +372,11 @@ namespace PhongShadingCylinder
                                 vertex.Position.Z + scale * vertex.Normal.Z);
         }
 
+        private Vector3 GetVectorToCamera(Vector3 position)
+        {
+            return CameraPosition - position;
+        }
+
         private void DrawLine(Vector2 p1, Vector2 p2)
         {
             var line = new Line();
@@ -381,12 +399,13 @@ namespace PhongShadingCylinder
             points.Add(new Point(p3.X, p3.Y));
             poly.Points = points;
             poly.Stroke = Brushes.Pink;
+            poly.StrokeLineJoin = PenLineJoin.Bevel;
             if (DrawLines)
-                poly.StrokeThickness = 1;
-            else
-                poly.StrokeThickness = 0;
+                poly.Stroke = Brushes.Black;
             if (FillTriangles)
-                poly.Fill = Brushes.Blue;
+            {
+                poly.Fill = Brushes.Pink;
+            }
             Scene.Children.Add(poly);
         }
 
