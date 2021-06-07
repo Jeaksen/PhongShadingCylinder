@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -21,17 +22,16 @@ namespace PhongShadingCylinder
         private DispatcherTimer dispatcher = new DispatcherTimer();
         private Point previousMousePosition;
         private Matrix4x4 transformMatrix;
+        private LightSource lightSource;
+        private Cylinder cylinder;
         private Mesh mesh = null;
 
         private float cylinderAngleX = 0;
         private float cylinderAngleY = 0;
         private float cylinderAngleZ = 0;
-        private float cylinderRadius = 40;
-        private float cylinderHeight = 70;
-        private int cylinderDivisionPoints = 40;
         private bool _drawNormals;
-        private bool _fillTriangles;
-        private bool _drawLines = true;
+        private bool _fillTriangles = true;
+        private bool _drawLines;
         private Vector3 _cameraPosition = new Vector3(0, 0, -150);
         private Vector3 _cameraRotation = new Vector3(0, 0, 0);
 
@@ -209,7 +209,23 @@ namespace PhongShadingCylinder
             InitializeDispatcher();
             previousMousePosition = Mouse.GetPosition(this);
             DataContext = this;
-            mesh = meshCreator.CreateCylinderMesh(cylinderRadius, cylinderHeight, new Vector3(0, -cylinderHeight / 2, 0), cylinderDivisionPoints);
+            lightSource = new LightSource()
+            {
+                Intensity = Colors.White,
+                Position = new Vector3(100, 40, -100)
+            };
+
+            cylinder = new Cylinder()
+            {
+                Height = 70,
+                Radius = 40,
+                Position = new Vector3(0, -70 / 2, 0),
+                DivisionPointsCount = 80,
+                DiffuseReflectivity = 0.6f,
+                SpecularReflectivity = 0.8f,
+                SpecularReflectionExponent = 20
+            };
+            mesh = meshCreator.CreateCylinderMesh(cylinder.Radius, cylinder.Height, cylinder.Position, cylinder.DivisionPointsCount);
             Loaded += new RoutedEventHandler(WindowInitialized);
         }
 
@@ -292,6 +308,7 @@ namespace PhongShadingCylinder
         {
             Scene.Children.Clear();
             CalculateTransformMatrix();
+            //DrawLightSource();
             DrawCylinder();
         }
 
@@ -300,6 +317,23 @@ namespace PhongShadingCylinder
             transformMatrix = Matrix4x4.Identity;
             transformMatrix *= Rotator.RotationMatrix(new Vector3(cylinderAngleX, cylinderAngleY, cylinderAngleZ));
             //transformMatrix *= Translator.TranslationMatrix(new Vector3(0, 0, 0));
+        }
+
+        private void DrawLightSource()
+        {
+            var point = Project(lightSource.Position);
+            if (point.HasValue)
+            {
+                var ellipse = new Ellipse();
+                ellipse.Width = 16;
+                ellipse.Height = 16;
+                ellipse.Fill = new SolidColorBrush(lightSource.Intensity);
+                ellipse.Stroke = Brushes.Black;
+                ellipse.StrokeThickness = 1;
+                Scene.Children.Add(ellipse);
+                Canvas.SetLeft(ellipse, point.Value.X);
+                Canvas.SetTop(ellipse, point.Value.Y);
+            }
         }
 
         private void DrawCylinder()
@@ -316,12 +350,17 @@ namespace PhongShadingCylinder
             {
                 if (!IsTriangleVisible(triangle))
                     continue;
+
                 var p1 = Project(triangle.Vertices[0].Position);
                 var p2 = Project(triangle.Vertices[1].Position);
                 var p3 = Project(triangle.Vertices[2].Position);
                 if (p1.HasValue && p2.HasValue && p3.HasValue)
                 {
-                    DrawTriangle(p1.Value, p2.Value, p3.Value);
+                    var positionAvg = (triangle.Vertices[0].Position + triangle.Vertices[1].Position + triangle.Vertices[2].Position) / 3;
+                    var normalAvg = (triangle.Vertices[0].Normal + triangle.Vertices[1].Normal + triangle.Vertices[2].Normal) / 3;
+                    var color = CalculateCylinderPointIllumination(positionAvg, normalAvg);
+                    DrawTriangle(p1.Value, p2.Value, p3.Value, color);
+
                     if (DrawNormals)
                     {
                         var p1Normal = Project(GetNormalEndPoint(triangle.Vertices[0]));
@@ -336,6 +375,29 @@ namespace PhongShadingCylinder
                     }
                 }
             }
+        }
+
+        private Color CalculateCylinderPointIllumination(Vector3 position, Vector3 normal)
+        {
+            var color = lightSource.AmbientColor;
+            var vectorToLight = GetVectorToLight(position);
+            var lightNormalDotProduct = Vector3.Dot(normal, vectorToLight);
+            if (lightNormalDotProduct > 0)
+            {
+                var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
+                color += diffusionColor;
+
+                var vectorToLightReflected = 2 * lightNormalDotProduct * normal - vectorToLight;
+                var vectorToCamera = GetVectorToCamera(position);
+                var reflectionDotResult = Vector3.Dot(vectorToLightReflected, vectorToCamera);
+                if (reflectionDotResult > 0)
+                {
+                    var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
+                    color += reflectionColor;
+                }
+            }
+            color.Clamp();
+            return color;
         }
 
         private bool IsTriangleVisible(Triangle triangle)
@@ -374,7 +436,12 @@ namespace PhongShadingCylinder
 
         private Vector3 GetVectorToCamera(Vector3 position)
         {
-            return CameraPosition - position;
+            return Vector3.Normalize(CameraPosition - position);
+        }
+
+        private Vector3 GetVectorToLight(Vector3 position)
+        {
+            return Vector3.Normalize(lightSource.Position - position);
         }
 
         private void DrawLine(Vector2 p1, Vector2 p2)
@@ -384,13 +451,18 @@ namespace PhongShadingCylinder
             line.Y1 = p1.Y;
             line.X2 = p2.X;
             line.Y2 = p2.Y;
-            line.Stroke = Brushes.Pink;
-            line.StrokeThickness = 3;
+            line.Stroke = Brushes.Red;
+            line.StrokeThickness = 2;
             line.StrokeEndLineCap = PenLineCap.Triangle;
             Scene.Children.Add(line);
         }
 
         private void DrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3)
+        {
+            DrawTriangle(p1, p2, p3, Colors.Pink);
+        }
+
+        private void DrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color)
         {
             var poly = new Polygon();
             var points = new PointCollection();
@@ -398,16 +470,19 @@ namespace PhongShadingCylinder
             points.Add(new Point(p2.X, p2.Y));
             points.Add(new Point(p3.X, p3.Y));
             poly.Points = points;
-            poly.Stroke = Brushes.Pink;
             poly.StrokeLineJoin = PenLineJoin.Bevel;
-            if (DrawLines)
-                poly.Stroke = Brushes.Black;
+
+
             if (FillTriangles)
             {
-                poly.Fill = Brushes.Pink;
+                poly.Stroke = new SolidColorBrush(color);
+                poly.Fill = new SolidColorBrush(color);
             }
+            if (DrawLines)
+                poly.Stroke = Brushes.Black;
             Scene.Children.Add(poly);
         }
+
 
 
         private void MoveCameraLeft(object sender, EventArgs e)
