@@ -13,7 +13,8 @@ namespace PhongShadingCylinder.Transformations
         {
             var matrix = Matrix4x4.Identity;
             matrix = matrix * Translator.TranslationMatrix(-cameraPosition);
-            return matrix * Rotator.RotationMatrix(cameraRotation);
+            matrix = matrix * Rotator.RotationMatrix(-cameraRotation);
+            return matrix;
         }
     }
 }

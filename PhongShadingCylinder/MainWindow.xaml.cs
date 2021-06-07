@@ -15,42 +15,82 @@ namespace PhongShadingCylinder
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
-        private Matrix4x4 transformMatrix;
-        private Mesh mesh = null;
         private MeshCreator meshCreator = new MeshCreator();
         private Dictionary<Key, EventHandler> keyEventHandlers = new();
         private Dictionary<Key, bool> keyEventsHandled = new();
         private DispatcherTimer dispatcher = new DispatcherTimer();
         private Point previousMousePosition;
-        private float deltaAngle = 1;
-        private float deltaPosition = 1;
-        private float _angleX = 0;
-        private float _angleY = 0;
-        private float _angleZ = 0;
+        private Matrix4x4 transformMatrix;
+        private Mesh mesh = null;
+
         private float cylinderAngleX = 0;
         private float cylinderAngleY = 0;
         private float cylinderAngleZ = 0;
-        private float _positionX = 0;
-        private float _positionY = 0;
         private float cylinderRadius = 40;
         private float cylinderHeight = 70;
         private int cylinderDivisionPoints = 40;
+        private bool _drawNormals;
+        private bool _fillTriangles;
+        private bool _drawLines = true;
+        private Vector3 _cameraPosition = new Vector3(0, 0, -150);
+        private Vector3 _cameraRotation = new Vector3(0, 0, 0);
 
         private new float Width => (float)Scene.ActualWidth;
         private new float Height => (float)Scene.ActualHeight;
+        private float ScrollDistanceMultiplier => 0.2f;
+        private float MoveCameraDistance => 1f;
+        private float RotateDistanceMultiplier => 0.1f;
 
-        public bool DrawNormals { get; set; }
-        public bool FillTriangles { get; set; }
-        public bool DrawLines { get; set; } = true;
+        public bool DrawNormals
+        {
+            get => _drawNormals;
+            set
+            {
+                if (value != _drawNormals)
+                {
+                    _drawNormals = value;
+                    RaisePropertyChanged();
+                    Redraw();
+                }
+            }
+        }
+
+        public bool FillTriangles
+        {
+            get => _fillTriangles;
+            set
+            {
+                if (value != _fillTriangles)
+                {
+                    _fillTriangles = value;
+                    RaisePropertyChanged();
+                    Redraw();
+                }
+            }
+        }
+
+        public bool DrawLines
+        {
+            get => _drawLines;
+            set
+            {
+                if (value != _drawLines)
+                {
+                    _drawLines = value;
+                    RaisePropertyChanged();
+                    Redraw();
+                }
+            }
+        }
 
         public float PositionX
         {
-            get => _positionX;
+            get => _cameraPosition.X;
             set
             {
-                if (value != _positionX)
+                if (value != _cameraPosition.X)
                 {
-                    _positionX = value;
+                    _cameraPosition.X = value;
                     RaisePropertyChanged();
                     Redraw();
                 }
@@ -59,12 +99,26 @@ namespace PhongShadingCylinder
 
         public float PositionY
         {
-            get => _positionY;
+            get => _cameraPosition.Y;
             set
             {
-                if (value != _positionY)
+                if (value != _cameraPosition.Y)
                 {
-                    _positionY = value;
+                    _cameraPosition.Y = value;
+                    RaisePropertyChanged();
+                    Redraw();
+                }
+            }
+        }
+
+        public float PositionZ
+        {
+            get => _cameraPosition.Z;
+            set
+            {
+                if (value != _cameraPosition.Z)
+                {
+                    _cameraPosition.Z = value;
                     RaisePropertyChanged();
                     Redraw();
                 }
@@ -73,12 +127,12 @@ namespace PhongShadingCylinder
 
         public float AngleX
         {
-            get => _angleX;
+            get => _cameraRotation.X;
             set
             {
-                if (value != _angleX)
+                if (value != _cameraRotation.X)
                 {
-                    _angleX = value;
+                    _cameraRotation.X = value;
                     RaisePropertyChanged();
                     Redraw();
                 }
@@ -87,20 +141,66 @@ namespace PhongShadingCylinder
 
         public float AngleY
         {
-            get => _angleY;
+            get => _cameraRotation.Y;
             set
             {
-                if (value != _angleY)
+                if (value != _cameraRotation.Y)
                 {
-                    _angleY = value;
+                    _cameraRotation.Y = value;
                     RaisePropertyChanged();
                     Redraw();
                 }
             }
         }
 
-        private Vector3 CameraPosition => new Vector3(PositionX, PositionY, 0);
-        private Vector3 CameraRotation => new Vector3(Rotator.AngleToRadians(AngleX), Rotator.AngleToRadians(AngleY), 0);
+        public float AngleZ
+        {
+            get => _cameraRotation.Z;
+            set
+            {
+                if (value != _cameraRotation.Z)
+                {
+                    _cameraRotation.Z = value;
+                    RaisePropertyChanged();
+                    Redraw();
+                }
+            }
+        }
+
+        private Vector3 CameraPosition
+        {
+            get => _cameraPosition;
+            set
+            {
+                if (value != _cameraPosition)
+                {
+                    _cameraPosition = value;
+                    RaisePropertyChanged();
+                    RaisePropertyChanged("PositionX");
+                    RaisePropertyChanged("PositionY");
+                    RaisePropertyChanged("PositionZ");
+                    Redraw();
+                }
+            }
+        }
+      
+        private Vector3 CameraRotation
+        {
+            get => _cameraRotation;
+            set
+            {
+                if (value != _cameraRotation)
+                {
+                    _cameraRotation = value;
+                    RaisePropertyChanged();
+                    RaisePropertyChanged("AngleX");
+                    RaisePropertyChanged("AngleY");
+                    RaisePropertyChanged("AngleZ");
+                    Redraw();
+                }
+            }
+        }
+
 
 
         public MainWindow()
@@ -137,17 +237,70 @@ namespace PhongShadingCylinder
             dispatcher.Start();
         }
 
+
+
         private void rotateShape(object sender, EventArgs e)
         {
-            _angleX += deltaAngle;
+            cylinderAngleZ += 1;
             Redraw();
         }
+
+        private void Scene_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            Redraw();
+        }
+
+        private void Scene_MouseMove(object sender, MouseEventArgs e)
+        {
+            var position = e.GetPosition(this);
+            if (e.RightButton == MouseButtonState.Pressed)
+            {
+                var distance = Point.Subtract(position, previousMousePosition);
+                var vector = new Vector3(-(float)(distance.Y * RotateDistanceMultiplier), (float)(distance.X * RotateDistanceMultiplier), 0);
+                CameraRotation += vector;
+            }
+            previousMousePosition = position;
+        }
+
+        private void Scene_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (keyEventsHandled.TryGetValue(e.Key, out bool pressed) && !pressed)
+            {
+                dispatcher.Tick += keyEventHandlers.GetValueOrDefault(e.Key);
+                keyEventsHandled[e.Key] = true;
+            }
+        }
+
+        private void Scene_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (keyEventsHandled.TryGetValue(e.Key, out bool pressed) && pressed)
+            {
+                dispatcher.Tick -= keyEventHandlers.GetValueOrDefault(e.Key);
+                keyEventsHandled[e.Key] = false;
+            }
+        }
+
+        private void Scene_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            var vector = new Vector3(0, 0, e.Delta * ScrollDistanceMultiplier);
+            var rotated = Rotator.Rotate(vector, -CameraRotation);
+            CameraPosition += rotated;
+        }
+
+
 
         private void Redraw()
         {
             Scene.Children.Clear();
-            CalclateTransformMatrix();
+            CalculateTransformMatrix();
             DrawCylinder();
+        }
+
+        private void CalculateTransformMatrix()
+        {
+            transformMatrix = Matrix4x4.Identity;
+            transformMatrix *= Rotator.RotationMatrix(new Vector3(cylinderAngleX, cylinderAngleY, cylinderAngleZ));
+            //transformMatrix *= Translator.TranslationMatrix(new Vector3(0, 0, 0));
         }
 
         private void DrawCylinder()
@@ -173,45 +326,37 @@ namespace PhongShadingCylinder
                         var p1Normal = Project(GetNormalEndPoint(triangle.Vertices[0]));
                         var p2Normal = Project(GetNormalEndPoint(triangle.Vertices[1]));
                         var p3Normal = Project(GetNormalEndPoint(triangle.Vertices[2]));
-                        DrawLine(p1.Value, p1Normal.Value);
-                        DrawLine(p2.Value, p2Normal.Value);
-                        DrawLine(p3.Value, p3Normal.Value);
+                        if (p1Normal.HasValue)
+                            DrawLine(p1.Value, p1Normal.Value);
+                        if (p2Normal.HasValue)
+                            DrawLine(p2.Value, p2Normal.Value);
+                        if (p3Normal.HasValue)
+                            DrawLine(p3.Value, p3Normal.Value);
                     }
                 }
             }
-        }
-
-        private Vector3 GetNormalEndPoint(Vertex vertex)
-        {
-            var scale = 10;
-            return new Vector3 (vertex.Position.X + scale * vertex.Normal.X,
-                                vertex.Position.Y + scale * vertex.Normal.Y,
-                                vertex.Position.Z + scale * vertex.Normal.Z);
-        }
-       
-        private void CalclateTransformMatrix()
-        {
-            var cylinderAngleRadiansX = Rotator.AngleToRadians(cylinderAngleX);
-            var cylinderAngleRadiansY = Rotator.AngleToRadians(cylinderAngleY);
-            var cylinderAngleRadiansZ = Rotator.AngleToRadians(cylinderAngleZ);
-
-            transformMatrix = (
-                                Rotator.RotationMatrix(new Vector3(cylinderAngleRadiansX, cylinderAngleRadiansY, cylinderAngleRadiansZ))
-                                *
-                                Translator.TranslationMatrix(new Vector3(0, 0, 150))
-                              );
         }
 
         private Vector2? Project(Vector3 vector)
         {
             var transformed = Vector4.Transform(vector, transformMatrix);
             var cameraTransformed = CameraTransformer.Transform(transformed, CameraPosition, CameraRotation);
+            //if (cameraTransformed.Z == 0)
+            //    return new Vector2(cameraTransformed.X, cameraTransformed.Y);
             if (cameraTransformed.Z < 0)
                 return null;
             var projected = PerspectiveProjector.Project(cameraTransformed, Width, Height);
             //var result3d = PerspectiveProjector.Normalize(transformed);
             var result2d = CoordinateTranslator.Translate3dTo2d(projected, Width, Height);
             return result2d;
+        }
+
+        private Vector3 GetNormalEndPoint(Vertex vertex)
+        {
+            var scale = 10;
+            return new Vector3(vertex.Position.X + scale * vertex.Normal.X,
+                                vertex.Position.Y + scale * vertex.Normal.Y,
+                                vertex.Position.Z + scale * vertex.Normal.Z);
         }
 
         private void DrawLine(Vector2 p1, Vector2 p2)
@@ -245,63 +390,36 @@ namespace PhongShadingCylinder
             Scene.Children.Add(poly);
         }
 
-        private void Scene_MouseMove(object sender, MouseEventArgs e)
-        {
-            var position = e.GetPosition(this);
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
-                var vector = Point.Subtract(position, previousMousePosition);
-                AngleX += (float)vector.Y / 10;
-                AngleY += (float)vector.X / 10;
-                Console.WriteLine("Left");
-                e.Handled = true;
-            }
-            previousMousePosition = position;
-        }
-
-        private void Scene_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (keyEventsHandled.TryGetValue(e.Key, out bool pressed) && !pressed)
-            {
-                dispatcher.Tick += keyEventHandlers.GetValueOrDefault(e.Key);
-                keyEventsHandled[e.Key] = true;
-            }
-        }
-
-        private void Scene_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (keyEventsHandled.TryGetValue(e.Key, out bool pressed) && pressed)
-            {
-                dispatcher.Tick -= keyEventHandlers.GetValueOrDefault(e.Key);
-                keyEventsHandled[e.Key] = false;
-            }
-        }
 
         private void MoveCameraLeft(object sender, EventArgs e)
         {
-            PositionX += deltaPosition;
+            var vector = new Vector3(-MoveCameraDistance, 0, 0);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
         }
 
         private void MoveCameraRight(object sender, EventArgs e)
         {
-            PositionX -= deltaPosition;
+            var vector = new Vector3(MoveCameraDistance, 0, 0);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
         }
 
         private void MoveCameraUp(object sender, EventArgs e)
         {
-            PositionY += deltaPosition;
+            var vector = new Vector3(0, MoveCameraDistance, 0);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
         }
 
         private void MoveCameraDown(object sender, EventArgs e)
         {
-            PositionY -= deltaPosition;
+            var vector = new Vector3(0, -MoveCameraDistance, 0);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
         }
 
-        private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            var m = Matrix4x4.CreateRotationX(3.14f);
-            Console.WriteLine(m);
-        }
+
 
 
         private void RaisePropertyChanged([CallerMemberName] string propertyName = null)

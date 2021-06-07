@@ -12,11 +12,26 @@ namespace PhongShadingCylinder.Transformations
         {
             var result = input;
             if (angles.X != 0)
-                result = RotateXAxis(result, AngleToRadians(angles.X));
+                result = RotateXAxis(result, angles.X);
             if (angles.Y != 0)
-                result = RotateYAxis(result, AngleToRadians(angles.Y));
+                result = RotateYAxis(result, angles.Y);
             if (angles.Z != 0)
-                result = RotateZAxis(result, AngleToRadians(angles.Z));
+                result = RotateZAxis(result, angles.Z);
+            return result;
+        }
+
+        /// <summary>
+        /// Rotates the input vector by values in angles vector
+        /// </summary>
+        public static Vector3 Rotate(Vector3 input, Vector3 angles)
+        {
+            var result = input;
+            if (angles.X != 0)
+                result = RotateXAxis(result, angles.X);
+            if (angles.Y != 0)
+                result = RotateYAxis(result, angles.Y);
+            if (angles.Z != 0)
+                result = RotateZAxis(result, angles.Z);
             return result;
         }
 
@@ -25,7 +40,14 @@ namespace PhongShadingCylinder.Transformations
         /// </summary>
         public static Matrix4x4 RotationMatrix(Vector3 angles)
         {
-            return RotationMatrixXAxis(angles.X) * RotationMatrixYAxis(angles.Y) * RotationMatrixZAxis(angles.Z);
+            var matrix = Matrix4x4.Identity;
+            if (angles.X != 0)
+                matrix *= RotationMatrixXAxis(angles.X);
+            if (angles.Y != 0)
+                matrix *= RotationMatrixYAxis(angles.Y);
+            if (angles.Z != 0)
+                matrix *= RotationMatrixZAxis(angles.Z);
+            return matrix;
         }
 
         /// <summary>
@@ -39,9 +61,25 @@ namespace PhongShadingCylinder.Transformations
         /// <summary>
         /// Rotates the input vector by values angle around X axis
         /// </summary>
+        public static Vector3 RotateXAxis(Vector3 input, float angle)
+        {
+            return Vector3.Transform(input, RotationMatrixXAxis(angle));
+        }
+
+        /// <summary>
+        /// Rotates the input vector by values angle around X axis
+        /// </summary>
         public static Vector4 RotateYAxis(Vector4 input, float angle)
         {
             return Vector4.Transform(input, RotationMatrixYAxis(angle));
+        }
+
+        /// <summary>
+        /// Rotates the input vector by values angle around X axis
+        /// </summary>
+        public static Vector3 RotateYAxis(Vector3 input, float angle)
+        {
+            return Vector3.Transform(input, RotationMatrixYAxis(angle));
         }
 
         /// <summary>
@@ -53,14 +91,23 @@ namespace PhongShadingCylinder.Transformations
         }
 
         /// <summary>
+        /// Rotates the input vector by values angle around X axis
+        /// </summary>
+        public static Vector3 RotateZAxis(Vector3 input, float angle)
+        {
+            return Vector3.Transform(input, RotationMatrixZAxis(angle));
+        }
+
+        /// <summary>
         /// Returns the rotation matrix for given angle around X axis
         /// </summary>
         public static Matrix4x4 RotationMatrixXAxis(float angle)
         {
+            var radians = AngleToRadians(angle);
             return new Matrix4x4(
                 1, 0, 0, 0,
-                0, MathF.Cos(angle), MathF.Sin(angle), 0,
-                0, -MathF.Sin(angle), MathF.Cos(angle), 0,
+                0, MathF.Cos(radians), MathF.Sin(radians), 0,
+                0, -MathF.Sin(radians), MathF.Cos(radians), 0,
                 0, 0, 0, 1);
         }
 
@@ -69,10 +116,11 @@ namespace PhongShadingCylinder.Transformations
         /// </summary>
         public static Matrix4x4 RotationMatrixYAxis(float angle)
         {
+            var radians = AngleToRadians(angle);
             return new Matrix4x4(
-                    MathF.Cos(angle), 0, MathF.Sin(angle), 0,
+                    MathF.Cos(radians), 0, MathF.Sin(radians), 0,
                     0, 1, 0, 0,
-                    -MathF.Sin(angle), 0, MathF.Cos(angle), 0,
+                    -MathF.Sin(radians), 0, MathF.Cos(radians), 0,
                     0, 0, 0, 1);
         }
 
@@ -81,9 +129,10 @@ namespace PhongShadingCylinder.Transformations
         /// </summary>
         public static Matrix4x4 RotationMatrixZAxis(float angle)
         {
+            var radians = AngleToRadians(angle);
             return new Matrix4x4(
-                            MathF.Cos(angle), MathF.Sin(angle), 0, 0,
-                            -MathF.Sin(angle), MathF.Cos(angle), 0, 0,
+                            MathF.Cos(radians), MathF.Sin(radians), 0, 0,
+                            -MathF.Sin(radians), MathF.Cos(radians), 0, 0,
                             0, 0, 1, 0,
                             0, 0, 0, 1);
         }
