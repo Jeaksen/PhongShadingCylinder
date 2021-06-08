@@ -10,6 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Linq;
+using System.Windows.Media.Imaging;
 
 namespace PhongShadingCylinder
 {
@@ -25,6 +27,7 @@ namespace PhongShadingCylinder
         private LightSource lightSource;
         private Cylinder cylinder;
         private Mesh mesh = null;
+        private FillingAlgorithm fillingAlgorithm = new FillingAlgorithm();
 
         private float cylinderAngleX = 0;
         private float cylinderAngleY = 0;
@@ -220,7 +223,7 @@ namespace PhongShadingCylinder
                 Height = 70,
                 Radius = 40,
                 Position = new Vector3(0, -70 / 2, 0),
-                DivisionPointsCount = 80,
+                DivisionPointsCount = 34,
                 DiffuseReflectivity = 0.6f,
                 SpecularReflectivity = 0.8f,
                 SpecularReflectionExponent = 20
@@ -232,6 +235,106 @@ namespace PhongShadingCylinder
         private void WindowInitialized(object sender, RoutedEventArgs e)
         {
             Redraw();
+            //var poly1 = new Polygon();
+            //var points1 = new PointCollection();
+            //points1.Add(new Point(100, 200));
+            //points1.Add(new Point(100, 300));
+            //points1.Add(new Point(200, 300));
+            //poly1.Points = points1;
+            //poly1.StrokeLineJoin = PenLineJoin.Bevel;
+            //var imageBrush = new ImageBrush();
+            //imageBrush.ImageSource = CreateBitmap(points1);
+            //imageBrush.Stretch = Stretch.None;
+            //poly1.Stroke = Brushes.DarkGray;
+            //poly1.Fill = imageBrush;
+
+            //var poly2 = new Polygon();
+            //var points2 = new PointCollection();
+            //points2.Add(new Point(150, 100));
+            //points2.Add(new Point(250, 100));
+            //points2.Add(new Point(250, 200));
+            //poly2.Points = points2;
+            //poly2.StrokeLineJoin = PenLineJoin.Bevel;
+
+            //poly2.Stroke = Brushes.DarkGray;
+            //poly2.Fill = imageBrush;
+
+            //var poly3 = new Polygon();
+            //var points3 = new PointCollection();
+            //points3.Add(new Point(400, 200));
+            //points3.Add(new Point(450, 100));
+            //points3.Add(new Point(500, 200));
+            //poly3.Points = points3;
+            //poly3.StrokeLineJoin = PenLineJoin.Bevel;
+
+            //poly3.Stroke = Brushes.DarkGray;
+            //poly3.Fill = imageBrush;
+
+            //var poly4 = new Polygon();
+            //var points4 = new PointCollection();
+            //points4.Add(new Point(400, 200));
+            //points4.Add(new Point(450, 300));
+            //points4.Add(new Point(500, 200));
+            //poly4.Points = points4;
+            //poly4.StrokeLineJoin = PenLineJoin.Bevel;
+
+            //poly4.Stroke = Brushes.DarkGray;
+            //poly4.Fill = imageBrush;
+
+            //Scene.Children.Add(poly1);
+            //Scene.Children.Add(poly2);
+            //Scene.Children.Add(poly3);
+            //Scene.Children.Add(poly4);
+        }
+
+        private BitmapSource CreateBitmap(IEnumerable<Vector3> points, Color color)
+        {
+            int xMax = (int)points.Max(p => p.X) + 1;
+            int xMin = (int)points.Min(p => p.X);
+            int yMax = (int)points.Max(p => p.Y) + 1;
+            int yMin = (int)points.Min(p => p.Y);
+            int width = xMax - xMin;
+            int height = yMax - yMin;
+            if (width == 0 || height == 0)
+                return null;
+            var byts = new byte[width * height * 4];
+
+            for (long i = 0; i < width * height * 4; i += 4)
+            {
+                byts[i] = color.B;
+                byts[i + 1] = color.G;
+                byts[i + 2] = color.R;
+                byts[i + 3] = 255;
+            }
+
+            return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr32, null, byts, 4 * width);
+        }
+
+        private BitmapSource CreateLightingBitmap(IEnumerable<Vector3> points, List<Vertex> interpolatedPoints)
+        {
+            int xMax = (int)points.Max(p => p.X) + 1;
+            int xMin = (int)points.Min(p => p.X);
+            int yMax = (int)points.Max(p => p.Y) + 1;
+            int yMin = (int)points.Min(p => p.Y);
+            int width = xMax - xMin;
+            int height = yMax - yMin;
+            if (width == 0 || height == 0)
+                return null;
+            var bytes = new byte[width * height * 4];
+            int x, y;
+            Color c;
+            foreach (var vertex in interpolatedPoints)
+            {
+                x = (int)(vertex.ProjectedPosition.X - xMin);
+                y = (int)(vertex.ProjectedPosition.Y - yMin);
+                c = CalculateCylinderPointIllumination(vertex.Position, vertex.Normal);
+                bytes[4 * (y * width + x)] = c.B;
+                bytes[4 * (y * width + x) + 1] = c.G;
+                bytes[4 * (y * width + x) + 2] = c.R;
+                bytes[4 * (y * width + x) + 3] = 255;
+            }
+
+            return BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr32, null, bytes, 4 * width);
         }
 
         private void InitializeKeyEventHandlers()
@@ -344,9 +447,9 @@ namespace PhongShadingCylinder
             //DrawTriangles(mesh.TrianglesTop);
         }
 
-        private void DrawTriangles(List<Triangle> trainagles)
+        private void DrawTriangles(List<Triangle> triangles)
         {
-            foreach (var triangle in trainagles)
+            foreach (var triangle in triangles)
             {
                 if (!IsTriangleVisible(triangle))
                     continue;
@@ -356,10 +459,19 @@ namespace PhongShadingCylinder
                 var p3 = Project(triangle.Vertices[2].Position);
                 if (p1.HasValue && p2.HasValue && p3.HasValue)
                 {
-                    var positionAvg = (triangle.Vertices[0].Position + triangle.Vertices[1].Position + triangle.Vertices[2].Position) / 3;
-                    var normalAvg = (triangle.Vertices[0].Normal + triangle.Vertices[1].Normal + triangle.Vertices[2].Normal) / 3;
-                    var color = CalculateCylinderPointIllumination(positionAvg, normalAvg);
-                    DrawTriangle(p1.Value, p2.Value, p3.Value, color);
+                    triangle.Vertices[0].ProjectedPosition = p1.Value;
+                    triangle.Vertices[1].ProjectedPosition = p2.Value;
+                    triangle.Vertices[2].ProjectedPosition = p3.Value;
+
+                    var interpolatedVertices =  fillingAlgorithm.Fill(triangle);
+                    var bmp = CreateLightingBitmap(triangle.Vertices.Select(v => v.ProjectedPosition), interpolatedVertices);
+
+                    //var positionAvg = (triangle.Vertices[0].Position + triangle.Vertices[1].Position + triangle.Vertices[2].Position) / 3;
+                    //var normalAvg = (triangle.Vertices[0].Normal + triangle.Vertices[1].Normal + triangle.Vertices[2].Normal) / 3;
+                    //var color = CalculateCylinderPointIllumination(positionAvg, normalAvg);
+                    if (bmp == null)
+                        continue;
+                    DrawTriangle(p1.Value, p2.Value, p3.Value, bmp);
 
                     if (DrawNormals)
                     {
@@ -375,6 +487,43 @@ namespace PhongShadingCylinder
                     }
                 }
             }
+        }
+
+        private bool IsTriangleVisible(Triangle triangle)
+        {
+            return IsVertexVisible(triangle.Vertices[0]) 
+                && IsVertexVisible(triangle.Vertices[1]) 
+                && IsVertexVisible(triangle.Vertices[2]);
+        }
+
+        private bool IsVertexVisible(Vertex vertex)
+        {
+            return Vector3.Dot(vertex.Normal, GetVectorToCamera(vertex.Position)) > 0;
+        }
+
+        private Vector3? Project(Vector3 vector)
+        {
+            var transformed = Vector4.Transform(vector, transformMatrix);
+            var cameraTransformed = CameraTransformer.Transform(transformed, CameraPosition, CameraRotation);
+            if (cameraTransformed.Z == 0)
+                return new Vector3(cameraTransformed.X,
+                                   cameraTransformed.Y,
+                                   0);
+            if (cameraTransformed.Z < 0)
+                return null;
+            var projected = PerspectiveProjector.Project(cameraTransformed, Width, Height);
+            var result2d = CoordinateTranslator.Translate3dTo2d(projected, Width, Height);
+            return result2d;
+        }
+
+        private Vector3 InverseProject(Vector3 vector)
+        {
+            var inverse2d = CoordinateTranslator.Translate2dTo3d(vector, Width, Height);
+            var inverseProject = PerspectiveProjector.Inverse(inverse2d, Width, Height);
+            var inverseCamera = CameraTransformer.Inverse(inverseProject, CameraPosition, CameraRotation);
+            return new Vector3(inverseCamera.X,
+                               inverseCamera.Y,
+                               inverseCamera.Z);
         }
 
         private Color CalculateCylinderPointIllumination(Vector3 position, Vector3 normal)
@@ -400,32 +549,6 @@ namespace PhongShadingCylinder
             return color;
         }
 
-        private bool IsTriangleVisible(Triangle triangle)
-        {
-            return IsVertexVisible(triangle.Vertices[0]) 
-                && IsVertexVisible(triangle.Vertices[1]) 
-                && IsVertexVisible(triangle.Vertices[2]);
-        }
-
-        private bool IsVertexVisible(Vertex vertex)
-        {
-            return Vector3.Dot(vertex.Normal, GetVectorToCamera(vertex.Position)) > 0;
-        }
-
-        private Vector2? Project(Vector3 vector)
-        {
-            var transformed = Vector4.Transform(vector, transformMatrix);
-            var cameraTransformed = CameraTransformer.Transform(transformed, CameraPosition, CameraRotation);
-            //if (cameraTransformed.Z == 0)
-            //    return new Vector2(cameraTransformed.X, cameraTransformed.Y);
-            if (cameraTransformed.Z < 0)
-                return null;
-            var projected = PerspectiveProjector.Project(cameraTransformed, Width, Height);
-            //var result3d = PerspectiveProjector.Normalize(transformed);
-            var result2d = CoordinateTranslator.Translate3dTo2d(projected, Width, Height);
-            return result2d;
-        }
-
         private Vector3 GetNormalEndPoint(Vertex vertex)
         {
             var scale = 10;
@@ -444,7 +567,7 @@ namespace PhongShadingCylinder
             return Vector3.Normalize(lightSource.Position - position);
         }
 
-        private void DrawLine(Vector2 p1, Vector2 p2)
+        private void DrawLine(Vector3 p1, Vector3 p2)
         {
             var line = new Line();
             line.X1 = p1.X;
@@ -457,12 +580,12 @@ namespace PhongShadingCylinder
             Scene.Children.Add(line);
         }
 
-        private void DrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3)
+        private void DrawTriangle(Vector3 p1, Vector3 p2, Vector3 p3)
         {
             DrawTriangle(p1, p2, p3, Colors.Pink);
         }
 
-        private void DrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color)
+        private void DrawTriangle(Vector3 p1, Vector3 p2, Vector3 p3, Color color)
         {
             var poly = new Polygon();
             var points = new PointCollection();
@@ -483,6 +606,28 @@ namespace PhongShadingCylinder
             Scene.Children.Add(poly);
         }
 
+        private void DrawTriangle(Vector3 p1, Vector3 p2, Vector3 p3, ImageSource fillBitmap)
+        {
+            var poly = new Polygon();
+            var points = new PointCollection();
+            points.Add(new Point(p1.X, p1.Y));
+            points.Add(new Point(p2.X, p2.Y));
+            points.Add(new Point(p3.X, p3.Y));
+            poly.Points = points;
+            poly.StrokeLineJoin = PenLineJoin.Bevel;
+
+            if (FillTriangles)
+            {
+                var brush = new ImageBrush(fillBitmap);
+                brush.Stretch = Stretch.None;
+                poly.Fill = brush;
+                poly.Stroke = brush;
+            }
+            if (DrawLines)
+                poly.Stroke = Brushes.Black;
+
+            Scene.Children.Add(poly);
+        }
 
 
         private void MoveCameraLeft(object sender, EventArgs e)

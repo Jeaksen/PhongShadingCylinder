@@ -116,9 +116,11 @@ namespace PhongShadingCylinder
 
     public class Vertex
     {
-        public Vector3 Position { get; set; }
+        public Vector3 Position;
 
-        public Vector3 Normal { get; set; }
+        public Vector3 ProjectedPosition;
+
+        public Vector3 Normal;
 
         public Vertex(Vector3 position, Vector3 normal)
         {
