@@ -6,13 +6,23 @@
         xmlns:local="clr-namespace:PhongShadingCylinder"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800"
-        MouseMove="Scene_MouseMove" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" MouseWheel="Scene_MouseWheel" SizeChanged="Scene_SizeChanged">
+        MouseMove="Scene_MouseMove" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" MouseWheel="Scene_MouseWheel" SizeChanged="Scene_SizeChanged" Background="Black">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition Width="150" />
         </Grid.ColumnDefinitions>
-
+        <Grid.Resources>
+            <Style TargetType="Label">
+                <Setter Property="Foreground" Value="White" />
+            </Style>
+            <Style TargetType="GroupBox">
+                <Setter Property="Foreground" Value="White" />
+            </Style>
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="Red" />
+            </Style>
+        </Grid.Resources>
         <Canvas x:Name="Scene" />
         <GroupBox Grid.Column="1" Header="Options">
             <StackPanel>

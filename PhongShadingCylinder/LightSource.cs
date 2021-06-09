@@ -7,6 +7,6 @@ namespace PhongShadingCylinder
     {
         public Color Intensity;
         public Vector3 Position;
-        public Color AmbientColor = new Color() { R = 40, G = 40, B = 40, A = 255};
+        public Color AmbientColor;
     }
 }

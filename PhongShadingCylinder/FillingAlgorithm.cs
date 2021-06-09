@@ -11,19 +11,24 @@ namespace PhongShadingCylinder
     {
         private static NodeSortXIncreasing xMinSort = new NodeSortXIncreasing();
 
-        public List<Vertex> Fill(Triangle triangle)
+        public List<Vertex> Fill(Triangle triangle, int width, int height)
         {
+            var vertices = new List<Vertex>();
+            if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -width * 0.5f 
+                                        || v.ProjectedPosition.X > 1.5f * width
+                                        || v.ProjectedPosition.Y < -height * 0.5f
+                                        || v.ProjectedPosition.Y > 1.5f * height))
+                return vertices;
             var nodes = new List<EdgeTableNode>();
             var edgeTables = CreateEdgeTables(triangle);
-            var vertices = new List<Vertex>();
             Vertex leftInterpolatedBound, rightInterpolatedBound;
             // While moving the polygon there may be a situation in which all edges are horizontal
             if (edgeTables.Count > 0)
             {
                 int yMax = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Max(p => p.Y);
                 int xMin = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Min(p => p.X);
-                int y = (int)edgeTables.Min(p => p.Key);
-                //var leftTopPoint = new Vector2(xMin, yMax);
+                int y = edgeTables.Min(p => p.Key);
+
                 while (y <= yMax)
                 {
                     if (edgeTables.ContainsKey(y))
@@ -35,8 +40,6 @@ namespace PhongShadingCylinder
                     {
                         leftInterpolatedBound = InterpolateVertex(nodes[0].Lower, nodes[0].Higher, nodes[0].StepLength * nodes[0].StepsMade);
                         rightInterpolatedBound = InterpolateVertex(nodes[1].Lower, nodes[1].Higher, nodes[1].StepLength * nodes[1].StepsMade);
-                        leftInterpolatedBound.Position.X = MathF.Floor(leftInterpolatedBound.Position.X) - 1;
-                        rightInterpolatedBound.Position.X = MathF.Ceiling(rightInterpolatedBound.Position.X) + 1;
 
                         var length = rightInterpolatedBound.ProjectedPosition.X - leftInterpolatedBound.ProjectedPosition.X;
                         // Interpolate between left and right
