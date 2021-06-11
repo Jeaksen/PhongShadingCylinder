@@ -23,17 +23,5 @@ namespace PhongShadingCylinder.Transformations
                         0, 0, 1, 0,
                         translations.X, translations.Y, translations.Z, 1);
         }
-
-        /// <summary>
-        /// Returns the inverse translation matrix for given translations
-        /// </summary>
-        public static Matrix4x4 InverseMatrix(Vector3 translations)
-        {
-            return new Matrix4x4(
-                        1, 0, 0, 0,
-                        0, 1, 0, 0,
-                        0, 0, 1, 0,
-                        -translations.X, -translations.Y, -translations.Z, 1);
-        }
     }
 }

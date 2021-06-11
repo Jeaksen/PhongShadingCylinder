@@ -51,21 +51,6 @@ namespace PhongShadingCylinder.Transformations
         }
 
         /// <summary>
-        /// Returns the inverse rotation matrix for given angles
-        /// </summary>
-        public static Matrix4x4 InverseMatrix(Vector3 angles)
-        {
-            var matrix = Matrix4x4.Identity;
-            if (angles.Z != 0)
-                matrix *= RotationMatrixZAxis(-angles.Z);
-            if (angles.Y != 0)
-                matrix *= RotationMatrixYAxis(-angles.Y);
-            if (angles.X != 0)
-                matrix *= RotationMatrixXAxis(-angles.X);
-            return matrix;
-        }
-
-        /// <summary>
         /// Rotates the input vector by values angle around X axis
         /// </summary>
         public static Vector4 RotateXAxis(Vector4 input, float angle)

@@ -13,12 +13,5 @@ namespace PhongShadingCylinder.Transformations
                                height / 2 * (1 + input.Y),
                                input.Z);
         }
-
-        public static Vector3 Translate2dTo3d(Vector3 input, float width, float height)
-        {
-            return new Vector3(1 - 2 * input.X / width,
-                               2 * input.Y / height - 1,
-                               input.Z);
-        }
     }
 }

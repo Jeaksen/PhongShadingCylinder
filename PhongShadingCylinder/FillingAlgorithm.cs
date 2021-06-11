@@ -160,18 +160,19 @@ namespace PhongShadingCylinder
         public static EdgeTableNode Create(Vertex start, Vertex end)
         {
             (var lower, var higher) = OrderVerticesProjectedYIncreasing(start, end);
-            var node = new EdgeTableNode();
-            node.yMax = higher.ProjectedPosition.Y;
-            node.yMin = lower.ProjectedPosition.Y;
-            node.xMin = lower.ProjectedPosition.X;
-            node.Lower = lower;
-            node.Higher = higher;
-
             float dy = higher.ProjectedPosition.Y - lower.ProjectedPosition.Y;
             float dx = higher.ProjectedPosition.X - lower.ProjectedPosition.X;
-            node.dx = dx / dy;
-            node.StepLength = 1 / dy;
-            return node;
+
+            return new EdgeTableNode
+            {
+                yMax = higher.ProjectedPosition.Y,
+                yMin = lower.ProjectedPosition.Y,
+                xMin = lower.ProjectedPosition.X,
+                Lower = lower,
+                Higher = higher,
+                dx = dx / dy,
+                StepLength = 1 / dy
+            };
         }
 
         public void OffsetByDx()
