@@ -14,34 +14,42 @@ namespace PhongShadingCylinder
         public List<Vertex> Fill(Triangle triangle, int width, int height)
         {
             var vertices = new List<Vertex>();
-            if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -width * 0.5f 
-                                        || v.ProjectedPosition.X > 1.5f * width
-                                        || v.ProjectedPosition.Y < -height * 0.5f
-                                        || v.ProjectedPosition.Y > 1.5f * height))
+            if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -width
+                                        || v.ProjectedPosition.X > 2 * width
+                                        || v.ProjectedPosition.Y < -height
+                                        || v.ProjectedPosition.Y > 2 * height))
                 return vertices;
+
             var nodes = new List<EdgeTableNode>();
             var edgeTables = CreateEdgeTables(triangle);
-            Vertex leftInterpolatedBound, rightInterpolatedBound;
-            // While moving the polygon there may be a situation in which all edges are horizontal
-            if (edgeTables.Count > 0)
-            {
-                int yMax = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Max(p => p.Y);
-                int xMin = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Min(p => p.X);
-                int y = edgeTables.Min(p => p.Key);
 
-                while (y <= yMax)
+            // While moving the polygon there may be a situation in which all edges are horizontal
+            if (edgeTables.Values.Sum(l => l.Count) < 2)
+                return vertices;
+
+
+            int yMax = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Max(p => p.Y);
+            int xMin = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Min(p => p.X);
+            int y = edgeTables.Min(p => p.Key);
+            Vertex leftInterpolatedBound, rightInterpolatedBound;
+
+            while (y <= yMax)
+            {
+                if (edgeTables.ContainsKey(y))
                 {
-                    if (edgeTables.ContainsKey(y))
-                    {
-                        nodes.AddRange(edgeTables[y]);
-                        nodes.Sort(xMinSort);
-                    }
-                    if (nodes.Count > 1)
+                    nodes.AddRange(edgeTables[y]);
+                    nodes.Sort(xMinSort);
+                }
+                if (nodes.Count > 1)
+                {
+                    if (y >= 0)
                     {
                         leftInterpolatedBound = InterpolateVertex(nodes[0].Lower, nodes[0].Higher, nodes[0].StepLength * nodes[0].StepsMade);
                         rightInterpolatedBound = InterpolateVertex(nodes[1].Lower, nodes[1].Higher, nodes[1].StepLength * nodes[1].StepsMade);
 
                         var length = rightInterpolatedBound.ProjectedPosition.X - leftInterpolatedBound.ProjectedPosition.X;
+                        length = length < 1 ? 1 : length;
+
                         // Interpolate between left and right
                         for (int i = 0; i < length; i++)
                         {
@@ -51,16 +59,16 @@ namespace PhongShadingCylinder
                             var projectedPosition = new Vector3(leftInterpolatedBound.ProjectedPosition.X + i, y, position.Z);
                             vertices.Add(new Vertex(position, normal) { ProjectedPosition = projectedPosition });
                         }
-
-                        nodes[0].OffsetByDx();
-                        nodes[1].OffsetByDx();
-                        nodes[0].StepsMade++;
-                        nodes[1].StepsMade++;
                     }
 
-                    y++;
-                    nodes.RemoveAll(n => (int)n.yMax <= y);
+                    nodes[0].OffsetByDx();
+                    nodes[1].OffsetByDx();
+                    nodes[0].StepsMade++;
+                    nodes[1].StepsMade++;
                 }
+
+                y++;
+                nodes.RemoveAll(n => (int)n.yMax <= y);
             }
 
             return vertices;
@@ -114,10 +122,11 @@ namespace PhongShadingCylinder
                 if ((int)triangle.Vertices[i].ProjectedPosition.Y != (int)triangle.Vertices[endIndex].ProjectedPosition.Y)
                 {
                     var node = EdgeTableNode.Create(triangle.Vertices[i], triangle.Vertices[endIndex]);
-                    if (edgeTables.ContainsKey((int)node.yMin))
-                        edgeTables[(int)node.yMin].Add(node);
+                    int key = (int)node.yMin;
+                    if (edgeTables.ContainsKey(key))
+                        edgeTables[key].Add(node);
                     else
-                        edgeTables.Add((int)node.yMin, new List<EdgeTableNode>() { node });
+                        edgeTables[key] = new List<EdgeTableNode>() { node };
                 }
 
             }

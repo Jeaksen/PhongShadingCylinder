@@ -33,11 +33,11 @@ namespace PhongShadingCylinder
 
             var bottomCapVertex = new Vertex(bottomCap, bottomCapNormal);
             var topCapVertex = new Vertex(topCap, topCapNormal);
-            // start from left most point and go counter clockwise
+            // start from back most point and go counter clockwise
             for (int i = 0; i < circleDivisionPoints; i++)
             {
-                float x = MathF.Cos(angle) * radius;
-                float z = MathF.Sin(angle) * radius;
+                float x = -MathF.Sin(angle) * radius;
+                float z = MathF.Cos(angle) * radius;
 
                 Vector3 normal = new Vector3(x, 0, z);
                 Vector3 normalizedNormal = Vector3.Normalize(normal);
@@ -77,6 +77,7 @@ namespace PhongShadingCylinder
             mesh.Vertices.AddRange(bottomCapRimPoints);
             mesh.Vertices.AddRange(topCapRimPoints);
             mesh.Vertices.AddRange(topCapSidePoints);
+
             mesh.Triangles.AddRange(trianglesBottom);
             mesh.Triangles.AddRange(trianglesTop);
             mesh.Triangles.AddRange(trianglesSide);
@@ -91,6 +92,7 @@ namespace PhongShadingCylinder
         public List<Triangle> Triangles { get; set; } = new List<Triangle>();
 
     }
+   
     public class Triangle
     {
         public Vertex[] Vertices { get; private set; } = new Vertex[3];
@@ -129,7 +131,7 @@ namespace PhongShadingCylinder
 
         public override string ToString()
         {
-            return $"{Position}, {Normal}";
+            return $"{ProjectedPosition}, {Position} , {Normal}";
         }
     }
 }

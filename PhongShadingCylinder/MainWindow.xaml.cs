@@ -32,11 +32,11 @@ namespace PhongShadingCylinder
         private bool _drawNormals;
         private bool _fillTriangles = true;
         private bool _drawLines;
-        private Vector3 _cameraPosition = new Vector3(0, 0, -150);
-        private Vector3 _cameraRotation = new Vector3(0, 1, 0);
+        private Vector3 _cameraPosition = new Vector3(0, 80, -150);
+        private Vector3 _cameraRotation = new Vector3(0, 0, 0);
 
-        private new float Width => (float)ActualWidth;
-        private new float Height => (float)ActualHeight;
+        private new int Width => (int)(base.Width - Options.ActualWidth);
+        private new int Height => (int)base.Height;
         private float ScrollDistanceMultiplier => 0.2f;
         private float MoveCameraDistance => 2f;
         private float RotateDistanceMultiplier => 0.1f;
@@ -206,13 +206,12 @@ namespace PhongShadingCylinder
         {
             InitializeComponent();
             InitializeKeyEventHandlers();
-            InitializeDispatcher();
             previousMousePosition = Mouse.GetPosition(this);
             DataContext = this;
             lightSource = new LightSource()
             {
-                Intensity = Colors.Salmon,
-                Position = new Vector3(100, 40, -100),
+                Intensity = Colors.White,
+                Position = new Vector3(0, 50 , lightDistance),
                 AmbientColor = new Color() { R = 40, G = 40, B = 40, A = 255 }
             };
 
@@ -233,51 +232,67 @@ namespace PhongShadingCylinder
 
         private void WindowInitialized(object sender, RoutedEventArgs e)
         {
-            Redraw();
+            InitializeDispatcher();
         }
 
         private void InitializeKeyEventHandlers()
         {
-            keyEventHandlers.Add(Key.Left, new EventHandler(MoveCameraLeft));
-            keyEventsHandled.Add(Key.Left, false);
-            keyEventHandlers.Add(Key.Right, new EventHandler(MoveCameraRight));
-            keyEventsHandled.Add(Key.Right, false);
-            keyEventHandlers.Add(Key.Up, new EventHandler(MoveCameraUp));
-            keyEventsHandled.Add(Key.Up, false);
-            keyEventHandlers.Add(Key.Down, new EventHandler(MoveCameraDown));
-            keyEventsHandled.Add(Key.Down, false);
+            keyEventHandlers.Add(Key.A, new EventHandler(MoveCameraLeft));
+            keyEventsHandled.Add(Key.A, false);
+            keyEventHandlers.Add(Key.D, new EventHandler(MoveCameraRight));
+            keyEventsHandled.Add(Key.D, false);
+            keyEventHandlers.Add(Key.W, new EventHandler(MoveCameraUp));
+            keyEventsHandled.Add(Key.W, false);
+            keyEventHandlers.Add(Key.S, new EventHandler(MoveCameraDown));
+            keyEventsHandled.Add(Key.S, false);
+            keyEventHandlers.Add(Key.E, new EventHandler(ZoomInCamera));
+            keyEventsHandled.Add(Key.E, false);
+            keyEventHandlers.Add(Key.Q, new EventHandler(ZoomOutCamera));
+            keyEventsHandled.Add(Key.Q, false);
+            keyEventHandlers.Add(Key.I, new EventHandler(RotateUpCamera));
+            keyEventsHandled.Add(Key.I, false);
+            keyEventHandlers.Add(Key.K, new EventHandler(RotateDownCamera));
+            keyEventsHandled.Add(Key.K, false);
+            keyEventHandlers.Add(Key.J, new EventHandler(RotateLeftCamera));
+            keyEventsHandled.Add(Key.J, false);
+            keyEventHandlers.Add(Key.L, new EventHandler(RotateRightCamera));
+            keyEventsHandled.Add(Key.L, false);
+
         }
 
         private void InitializeDispatcher()
         {
-            dispatcher.Interval = new TimeSpan(0, 0, 0, 0, 5);
+            dispatcher.Interval = new TimeSpan(0, 0, 0, 0, 20);
+            dispatcher.Tick += new EventHandler(RedrawScene);
+            dispatcher.Tick += new EventHandler(MoveLightSource);
             dispatcher.Start();
         }
 
+
         private void Scene_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            int width = (int)MathF.Ceiling(Width);
-            int height = (int)MathF.Ceiling(Height);
-            lightingBitmap = new WriteableBitmap(
-                width,
-                height,
-                96,
-                96,
-                PixelFormats.Bgr32,
-                null);
-            Redraw();
+            if (Width > 0 && Height > 0)
+            {
+                lightingBitmap = new WriteableBitmap(
+                                        Width,
+                                        Height,
+                                        96,
+                                        96,
+                                        PixelFormats.Bgr32,
+                                        null);
+            }
         }
 
         private void Scene_MouseMove(object sender, MouseEventArgs e)
         {
-            var position = e.GetPosition(this);
-            if (e.RightButton == MouseButtonState.Pressed)
-            {
-                var distance = Point.Subtract(position, previousMousePosition);
-                var vector = new Vector3(-(float)(distance.Y * RotateDistanceMultiplier), (float)(distance.X * RotateDistanceMultiplier), 0);
-                CameraRotation += vector;
-            }
-            previousMousePosition = position;
+            //var position = e.GetPosition(this);
+            //if (e.RightButton == MouseButtonState.Pressed)
+            //{
+            //    var distance = Point.Subtract(position, previousMousePosition);
+            //    var vector = new Vector3(-(float)(distance.Y * RotateDistanceMultiplier), (float)(distance.X * RotateDistanceMultiplier), 0);
+            //    CameraRotation += vector;
+            //}
+            //previousMousePosition = position;
         }
 
         private void Scene_KeyDown(object sender, KeyEventArgs e)
@@ -300,16 +315,65 @@ namespace PhongShadingCylinder
 
         private void Scene_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            var vector = new Vector3(0, 0, e.Delta * ScrollDistanceMultiplier);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            //var vector = new Vector3(0, 0, e.Delta * ScrollDistanceMultiplier);
+            //var rotated = Rotator.Rotate(vector, CameraRotation);
+            //CameraPosition += rotated;
         }
+
+        private void RedrawScene(object sender, EventArgs e)
+        {
+            Scene.Children.Clear();
+            ClearLightingBitmap();
+            DrawLightSource();
+            DrawCylinder();
+            //ImgTest.Source = lightingBitmap;
+        }
+
+        private float lightAngle = 0;
+        private float lightDistance = 100;
+        private void MoveLightSource(object sender, EventArgs e)
+        {
+            lightSource.Position.X = lightDistance * MathF.Sin(lightAngle);
+            lightSource.Position.Z = lightDistance * MathF.Cos(lightAngle);
+            lightAngle += 0.1f;
+        }
+
 
         private void Redraw()
         {
-            Scene.Children.Clear();
-            DrawLightSource();
-            DrawCylinder();
+            //Scene.Children.Clear();
+            //DrawLightSource();
+            //DrawCylinder();
+            //ClearLightingBitmap();
+        }
+
+        private void ClearLightingBitmap()
+        {
+            try
+            {
+                // Reserve the back buffer for updates.
+                lightingBitmap.Lock();
+
+                unsafe
+                {
+                    // Get a pointer to the back buffer.
+                    IntPtr pBackBuffer = lightingBitmap.BackBuffer;
+                    for (int i = 0; i < lightingBitmap.BackBufferStride * lightingBitmap.PixelHeight; i++)
+                    {
+                        //*((int*)pBackBuffer) = int.MaxValue;
+                        *((int*)pBackBuffer) = 0;
+                        pBackBuffer += 1;
+                    }
+                }
+
+                // Specify the area of the bitmap that changed.
+                lightingBitmap.AddDirtyRect(new Int32Rect(0, 0, Width, Height));
+            }
+            finally
+            {
+                // Release the back buffer and make it available for display.
+                lightingBitmap.Unlock();
+            }
         }
 
         private void DrawLightSource()
@@ -350,7 +414,7 @@ namespace PhongShadingCylinder
                     triangle.Vertices[1].ProjectedPosition = p2.Value;
                     triangle.Vertices[2].ProjectedPosition = p3.Value;
 
-                    var interpolatedFillVertices = fillingAlgorithm.Fill(triangle, (int)Width, (int)Height);
+                    var interpolatedFillVertices = fillingAlgorithm.Fill(triangle, Width, Height);
                     var brush = CreateLightingBrush(interpolatedFillVertices);
                     if (brush == null)
                         continue;
@@ -376,13 +440,15 @@ namespace PhongShadingCylinder
         private bool IsTriangleVisible(Triangle triangle)
         {
             return IsVertexVisible(triangle.Vertices[0]) 
-                && IsVertexVisible(triangle.Vertices[1]) 
-                && IsVertexVisible(triangle.Vertices[2]);
+                || IsVertexVisible(triangle.Vertices[1]) 
+                || IsVertexVisible(triangle.Vertices[2]);
         }
 
         private bool IsVertexVisible(Vertex vertex)
         {
-            return Vector3.Dot(vertex.Normal, GetVectorToCamera(vertex.Position)) > 0;
+            var toCamera = GetVectorToCamera(vertex.Position);
+            var dot = Vector3.Dot(toCamera, vertex.Normal);
+            return dot > 0;
         }
 
         private Vector3? Project(Vector3 vector)
@@ -402,8 +468,6 @@ namespace PhongShadingCylinder
 
         private ImageBrush CreateLightingBrush(List<Vertex> interpolatedPoints)
         {
-            interpolatedPoints = interpolatedPoints.Where(v => IsPointInBounds(v.ProjectedPosition.X, v.ProjectedPosition.Y)).ToList();
-
             if (interpolatedPoints.Count == 0)
                 return null;
 
@@ -411,45 +475,40 @@ namespace PhongShadingCylinder
             int xMin = (int)interpolatedPoints.Min(p => p.ProjectedPosition.X);
             int yMax = (int)interpolatedPoints.Max(p => p.ProjectedPosition.Y);
             int yMin = (int)interpolatedPoints.Min(p => p.ProjectedPosition.Y);
-            int width = xMax - xMin;
-            int height = yMax - yMin;
-            if (width == 0 || height == 0)
+            int width = xMax - xMin + 1;
+            int height = yMax - yMin + 1;
+            if (width <= 0 || height <= 0)
                 return null;
 
             try
             {
-                // Reserve the back buffer for updates.
                 lightingBitmap.Lock();
 
                 unsafe
                 {
-                    // Get a pointer to the back buffer.
                     IntPtr pBackBuffer = lightingBitmap.BackBuffer;
 
                     Color color;
                     int x, y;
                     foreach (var vertex in interpolatedPoints)
                     {
+                        if (!IsPointInBounds(vertex.ProjectedPosition))
+                            continue;
                         x = (int)(vertex.ProjectedPosition.X);
                         y = (int)(vertex.ProjectedPosition.Y);
-                        if (IsPointInBounds(x, y))
-                        {
-                            color = CalculateCylinderPointIllumination(vertex.Position, vertex.Normal);
-                            IntPtr currentBuffer = pBackBuffer + y * lightingBitmap.BackBufferStride + x * 4;
-                            int color_data = color.R << 16; // R
-                            color_data |= color.G << 8;   // G
-                            color_data |= color.B << 0;   // B
-                            *((int*)currentBuffer) = color_data;
-                        }
+                        IntPtr currentBuffer = pBackBuffer + y * lightingBitmap.BackBufferStride + x * 4;
+                        color = CalculatePointIlumination(vertex.Position, vertex.Normal);
+                        int color_data = color.R << 16; // R
+                        color_data |= color.G << 8;   // G
+                        color_data |= color.B << 0;   // B
+                        *((int*)currentBuffer) = color_data;
                     }
                 }
 
-                // Specify the area of the bitmap that changed.
-                lightingBitmap.AddDirtyRect(new Int32Rect(xMin, yMin, width, height));
+                lightingBitmap.AddDirtyRect(new Int32Rect(0, 0, Width, Height));
             }
             finally
             {
-                // Release the back buffer and make it available for display.
                 lightingBitmap.Unlock();
             }
 
@@ -462,7 +521,7 @@ namespace PhongShadingCylinder
             return brush;
         }
 
-        private Color CalculateCylinderPointIllumination(Vector3 position, Vector3 normal)
+        private Color CalculatePointIlumination(Vector3 position, Vector3 normal)
         {
             var color = lightSource.AmbientColor;
             var vectorToLight = GetVectorToLight(position);
@@ -537,15 +596,13 @@ namespace PhongShadingCylinder
             Scene.Children.Add(poly);
         }
 
-        private bool IsPointInBounds(int x, int y)
+        private bool IsPointInBounds(Vector3 point)
         {
-            return x >= 0 && x < Width && y >= 0 && y < Height;
+            return point.X >= 0 && point.X < Width && point.Y >= 0 && point.Y < Height;
         }
 
-        private bool IsPointInBounds(float x, float y)
-        {
-            return x >= 0 && x < Width && y >= 0 && y < Height;
-        }
+
+
 
 
         private void MoveCameraLeft(object sender, EventArgs e)
@@ -574,6 +631,44 @@ namespace PhongShadingCylinder
             var vector = new Vector3(0, -MoveCameraDistance, 0);
             var rotated = Rotator.Rotate(vector, CameraRotation);
             CameraPosition += rotated;
+        }
+
+        private float scrollDistance = 3f;
+
+        private void ZoomInCamera(object sender, EventArgs e)
+        {
+            var vector = new Vector3(0, 0, scrollDistance);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
+        }
+
+        private void ZoomOutCamera(object sender, EventArgs e)
+        {
+            var vector = new Vector3(0, 0, -scrollDistance);
+            var rotated = Rotator.Rotate(vector, CameraRotation);
+            CameraPosition += rotated;
+        }
+
+        private float rotateDistance = 1.5f;
+
+        private void RotateUpCamera(object sender, EventArgs e)
+        {
+            AngleX -= rotateDistance;
+        }
+
+        private void RotateDownCamera(object sender, EventArgs e)
+        {
+            AngleX += rotateDistance;
+        }
+
+        private void RotateLeftCamera(object sender, EventArgs e)
+        {
+            AngleY += rotateDistance;
+        }
+
+        private void RotateRightCamera(object sender, EventArgs e)
+        {
+            AngleY -= rotateDistance;
         }
 
 

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800"
         MouseMove="Scene_MouseMove" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" MouseWheel="Scene_MouseWheel" SizeChanged="Scene_SizeChanged" Background="Black">
-    <Grid>
+    <Grid Name="Base">
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
             <ColumnDefinition Width="150" />
@@ -23,8 +23,9 @@
                 <Setter Property="Foreground" Value="Red" />
             </Style>
         </Grid.Resources>
-        <Canvas x:Name="Scene" />
-        <GroupBox Grid.Column="1" Header="Options">
+        <Image x:Name="ImgTest" />
+        <Canvas x:Name="Scene" ClipToBounds="True" />
+        <GroupBox Grid.Column="1" Header="Options" Name="Options">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Draw normals " />
