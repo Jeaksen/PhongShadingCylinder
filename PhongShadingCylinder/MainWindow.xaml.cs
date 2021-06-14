@@ -221,9 +221,9 @@ namespace PhongShadingCylinder
                 Radius = 40,
                 Position = new Vector3(0, -70 / 2, 0),
                 DivisionPointsCount = 34,
-                DiffuseReflectivity = 1f,
-                SpecularReflectivity = 1f,
-                SpecularReflectionExponent = 100
+                DiffuseReflectivity = new float[] { 0f, 1f, 0f },
+                SpecularReflectivity = new float[] { 0f, 1f, 0f },
+                SpecularReflectionExponent = 2
             };
             mesh = meshCreator.CreateCylinderMesh(cylinder.Radius, cylinder.Height, cylinder.Position, cylinder.DivisionPointsCount);
             Loaded += new RoutedEventHandler(WindowInitialized);
@@ -528,20 +528,30 @@ namespace PhongShadingCylinder
             var lightNormalDotProduct = Vector3.Dot(normal, vectorToLight);
             if (lightNormalDotProduct > 0)
             {
-                var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
-                color += diffusionColor;
+                //var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
+                color += CreateColor(lightSource.Intensity, cylinder.DiffuseReflectivity, lightNormalDotProduct);
 
                 var vectorToLightReflected = 2 * lightNormalDotProduct * normal - vectorToLight;
                 var vectorToCamera = GetVectorToCamera(position);
                 var reflectionDotResult = Vector3.Dot(vectorToLightReflected, vectorToCamera);
                 if (reflectionDotResult > 0)
                 {
-                    var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
-                    color += reflectionColor;
+                    //var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
+                    color += CreateColor(lightSource.Intensity, cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
                 }
             }
             color.Clamp();
             return color;
+        }
+
+        private Color CreateColor(Color baseColor, float[] chanellMultipliers, float multiplier)
+        {
+            return new Color()
+            {
+                R = (byte)(baseColor.R * chanellMultipliers[0] * multiplier),
+                G = (byte)(baseColor.G * chanellMultipliers[1] * multiplier),
+                B = (byte)(baseColor.B * chanellMultipliers[2] * multiplier),
+            };
         }
 
         private Vector3 GetNormalEndPoint(Vertex vertex)

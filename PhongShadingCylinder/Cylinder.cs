@@ -13,8 +13,8 @@ namespace PhongShadingCylinder
         public float Radius { get; set; }
         public Vector3 Position { get; set; }
         public int DivisionPointsCount { get; set; }
-        public float DiffuseReflectivity { get; set; }
-        public float SpecularReflectivity { get; set; }
+        public float[] DiffuseReflectivity { get; set; }
+        public float[] SpecularReflectivity { get; set; }
         public float SpecularReflectionExponent { get; set; }
 
     }
