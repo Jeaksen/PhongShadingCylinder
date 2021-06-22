@@ -14,6 +14,7 @@ namespace PhongShadingCylinder
         public List<Vertex> Fill(Triangle triangle, int width, int height)
         {
             var vertices = new List<Vertex>();
+            // very sofisticated clipping
             if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -width
                                         || v.ProjectedPosition.X > 2 * width
                                         || v.ProjectedPosition.Y < -height

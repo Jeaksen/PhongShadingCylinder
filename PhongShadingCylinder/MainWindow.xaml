@@ -25,30 +25,18 @@
         </Grid.Resources>
         <Image x:Name="ImgTest" />
         <Canvas x:Name="Scene" ClipToBounds="True" />
-        <GroupBox Grid.Column="1" Header="Options" Name="Options">
+        <GroupBox Grid.Column="1" Header="Stats" Name="Options">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Label Content="Draw normals " />
-                    <CheckBox IsChecked="{Binding DrawNormals}" VerticalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="Fill triangles " />
-                    <CheckBox IsChecked="{Binding FillTriangles}" VerticalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="Draw lines " />
-                    <CheckBox IsChecked="{Binding DrawLines}" VerticalAlignment="Center" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="Position X " />
+                    <Label Content="Camera X " />
                     <TextBlock Text="{Binding PositionX}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Label Content="Position X " />
+                    <Label Content="Camera X " />
                     <TextBlock Text="{Binding PositionY}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <Label Content="Position Z " />
+                    <Label Content="Camera Z " />
                     <TextBlock Text="{Binding PositionZ}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
