@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PhongShadingCylinder
 {
@@ -52,13 +50,12 @@ namespace PhongShadingCylinder
                         length = length < 1 ? 1 : length;
 
                         // Interpolate between left and right
-                        for (int i = 0; i < length; i++)
+                        for (int i = 0; i <= length; i++)
                         {
                             float coefficient = i / length;
-                            var position = InterpolatePosition(leftInterpolatedBound, rightInterpolatedBound, coefficient);
-                            var normal = Vector3.Normalize(InterpolateNormal(leftInterpolatedBound, rightInterpolatedBound, coefficient));
-                            var projectedPosition = new Vector3(leftInterpolatedBound.ProjectedPosition.X + i, y, position.Z);
-                            vertices.Add(new Vertex(position, normal) { ProjectedPosition = projectedPosition });
+                            var vertex = InterpolateVertex(leftInterpolatedBound, rightInterpolatedBound, coefficient);
+
+                            vertices.Add(vertex);
                         }
                     }
 
@@ -78,38 +75,20 @@ namespace PhongShadingCylinder
         private Vertex InterpolateVertex(Vertex start, Vertex end, float lineCoefficient)
         {
             var projectedPosition = (end.ProjectedPosition - start.ProjectedPosition) * lineCoefficient + start.ProjectedPosition;
-            var position = InterpolatePosition(start, end, lineCoefficient);
-            var normal = InterpolatePosition(start, end, lineCoefficient);
-            var vertex = new Vertex(position, normal) { ProjectedPosition = projectedPosition };
-            return vertex;
+
+            float u = GetInterpolationCoefficient(start.ProjectedPosition, end.ProjectedPosition, projectedPosition, lineCoefficient);
+            var position = (end.Position - start.Position) * u + start.Position;
+            var normal = Vector3.Normalize((end.Normal - start.Normal) * u + start.Normal);
+            return new Vertex(position, normal, projectedPosition);
         }
 
-        private Vector3 InterpolatePosition(Vertex start, Vertex end, float lineCoefficient)
+        private float GetInterpolationCoefficient(Vector3 start, Vector3 end, Vector3 projectedPosition, float lineCoefficient)
         {
-            float u = GetInterpolationCoefficient(start.ProjectedPosition, end.ProjectedPosition, lineCoefficient);
-
-            return (end.Position - start.Position) * u + start.Position;
-        }
-
-        private Vector3 InterpolateNormal(Vertex start, Vertex end, float lineCoefficient)
-        {
-            float u = GetInterpolationCoefficient(start.ProjectedPosition, end.ProjectedPosition, lineCoefficient);
-
-            return (end.Position - start.Position) * u + start.Position;
-        }
-
-        private float GetInterpolationCoefficient(Vector3 start, Vector3 end, float lineCoefficient)
-        {
-            float u;
-            if (start.Z == end.Z)
-                u = lineCoefficient;
-            else
-            {
-                float z_t = (end.Z - start.Z) * lineCoefficient + start.Z;
-                u = (1 / z_t - 1 / start.Z) / (1 / end.Z - 1 / start.Z);
-            }
-
-            return u;
+            var denominator = 1 / end.Z - 1 / start.Z;
+            var numerator = 1 / projectedPosition.Z - 1 / start.Z;
+            if (MathF.Abs(denominator) < float.Epsilon || float.IsNaN(denominator) || float.IsNaN(numerator))
+                return lineCoefficient;
+            return numerator / denominator;
         }
 
         private Dictionary<int, List<EdgeTableNode>> CreateEdgeTables(Triangle triangle)
@@ -172,7 +151,6 @@ namespace PhongShadingCylinder
             (var lower, var higher) = OrderVerticesProjectedYIncreasing(start, end);
             float dy = higher.ProjectedPosition.Y - lower.ProjectedPosition.Y;
             float dx = higher.ProjectedPosition.X - lower.ProjectedPosition.X;
-
             return new EdgeTableNode
             {
                 yMax = higher.ProjectedPosition.Y,

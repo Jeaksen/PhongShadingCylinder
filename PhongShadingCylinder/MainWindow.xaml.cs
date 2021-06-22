@@ -22,7 +22,6 @@ namespace PhongShadingCylinder
         private readonly Dictionary<Key, EventHandler> keyEventHandlers = new();
         private readonly Dictionary<Key, bool> keyEventsHandled = new();
         private readonly DispatcherTimer dispatcher = new DispatcherTimer();
-        private readonly Cylinder cylinder;
         private readonly Mesh mesh = null;
         private readonly FillingAlgorithm fillingAlgorithm = new FillingAlgorithm();
         private WriteableBitmap lightingBitmap;
@@ -31,15 +30,16 @@ namespace PhongShadingCylinder
         private new int Height => (int)base.Height;
 
         private float lightAngle = 0;
-        private float lightDistance = 100;
-        private float scrollDistance = 3f;
-        private float rotateDistance = 1.5f;
+        private float LightDistance => 100;
+        private float ScrollDistance => 3f;
+        private float rotateDistance => 1.5f;
         private float ScrollDistanceMultiplier => 0.2f;
         private float MoveCameraDistance => 2f;
         private float RotateDistanceMultiplier => 0.1f;
 
         public Camera Camera { get; set; }
         public LightSource LightSource { get; set; }
+        public Cylinder Cylinder { get; set; }
 
         public MainWindow()
         {
@@ -49,26 +49,25 @@ namespace PhongShadingCylinder
             LightSource = new LightSource()
             {
                 Intensity = Colors.White,
-                Position = new Vector3(0, 50 , lightDistance),
+                Position = new Vector3(0, 100, LightDistance),
                 AmbientColor = new Color() { R = 40, G = 40, B = 40, A = 255 }
             };
             Camera = new Camera()
             {
-                Position = new Vector3(0, 80, -150),
+                Position = new Vector3(0, 50, -150),
                 Rotation = new Vector3(0, 0, 0)
             };
-
-            cylinder = new Cylinder()
+            Cylinder = new Cylinder()
             {
                 Height = 70,
                 Radius = 40,
                 Position = new Vector3(0, -70 / 2, 0),
                 DivisionPointsCount = 34,
-                DiffuseReflectivity = new float[] { 0.7f, 0.7f, 0.7f },
-                SpecularReflectivity = new float[] { 0.7f, 0.7f, 0.7f },
-                SpecularReflectionExponent = 2
+                DiffuseReflectivity = new float[] { 0.3f, 0.8f, 0.7f },
+                SpecularReflectivity = new float[] { 0.9f, 0.9f, 0.9f },
+                SpecularReflectionExponent = 25
             };
-            mesh = meshCreator.CreateCylinderMesh(cylinder.Radius, cylinder.Height, cylinder.Position, cylinder.DivisionPointsCount);
+            mesh = meshCreator.CreateCylinderMesh(Cylinder.Radius, Cylinder.Height, Cylinder.Position, Cylinder.DivisionPointsCount);
             Loaded += new RoutedEventHandler(WindowInitialized);
         }
 
@@ -155,11 +154,10 @@ namespace PhongShadingCylinder
 
         private void MoveLightSource(object sender, EventArgs e)
         {
-            LightSource.Position.X = lightDistance * MathF.Sin(lightAngle);
-            LightSource.Position.Z = lightDistance * MathF.Cos(lightAngle);
+            LightSource.Position.X = LightDistance * MathF.Sin(lightAngle);
+            LightSource.Position.Z = LightDistance * MathF.Cos(lightAngle);
             lightAngle += 0.1f;
         }
-
 
 
         private void ClearLightingBitmap()
@@ -226,8 +224,6 @@ namespace PhongShadingCylinder
             DrawLightingBitmap(interpolatedFillVertices);
         }
 
-       
-
         private Vector3? Project(Vector3 vector)
         {
             var input = new Vector4(vector, 1);
@@ -283,7 +279,7 @@ namespace PhongShadingCylinder
             if (lightNormalDotProduct > 0)
             {
                 //var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
-                color += CreateColor(LightSource.Intensity, cylinder.DiffuseReflectivity, lightNormalDotProduct);
+                color += CreateColor(LightSource.Intensity, Cylinder.DiffuseReflectivity, lightNormalDotProduct);
 
                 var vectorReflectedLight = 2 * lightNormalDotProduct * normal - vectorToLight;
                 var vectorToCamera = Camera.VectorTo(position);
@@ -291,7 +287,7 @@ namespace PhongShadingCylinder
                 if (reflectionDotResult > 0)
                 {
                     //var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
-                    color += CreateColor(LightSource.Intensity, cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
+                    color += CreateColor(LightSource.Intensity, Cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, Cylinder.SpecularReflectionExponent));
                 }
             }
             color.Clamp();
@@ -353,12 +349,12 @@ namespace PhongShadingCylinder
 
         private void ZoomInCamera(object sender, EventArgs e)
         {
-            Camera.ZoomIn(scrollDistance);
+            Camera.ZoomIn(ScrollDistance);
         }
 
         private void ZoomOutCamera(object sender, EventArgs e)
         {
-            Camera.ZoomOut(scrollDistance);
+            Camera.ZoomOut(ScrollDistance);
         }
 
         private void RotateUpCamera(object sender, EventArgs e)

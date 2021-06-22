@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PhongShadingCylinder
 {
-    class Cylinder
+    public class Cylinder
     {
         public float Height { get; set; }
         public float Radius { get; set; }

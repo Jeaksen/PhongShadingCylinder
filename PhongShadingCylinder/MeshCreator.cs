@@ -123,6 +123,13 @@ namespace PhongShadingCylinder
             Normal = normal;
         }
 
+        public Vertex(Vector3 position, Vector3 normal, Vector3 projectedPosition)
+        {
+            Position = position;
+            Normal = normal;
+            ProjectedPosition = projectedPosition;
+        }
+
         public Vertex Clone()
         {
             return new Vertex(Position, Normal);
