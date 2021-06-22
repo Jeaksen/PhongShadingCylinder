@@ -5,8 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PhongShadingCylinder"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800"
-        MouseMove="Scene_MouseMove" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" MouseWheel="Scene_MouseWheel" SizeChanged="Scene_SizeChanged" Background="Black">
+        Title="MainWindow" Height="450" Width="800" KeyDown="Scene_KeyDown" KeyUp="Scene_KeyUp" SizeChanged="Scene_SizeChanged" Background="Black">
     <Grid Name="Base">
         <Grid.ColumnDefinitions>
             <ColumnDefinition />
@@ -29,23 +28,23 @@
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Camera X " />
-                    <TextBlock Text="{Binding PositionX}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Camera.PositionX}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Camera X " />
-                    <TextBlock Text="{Binding PositionY}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Camera.PositionY}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Camera Z " />
-                    <TextBlock Text="{Binding PositionZ}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Camera.PositionZ}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Angle X " />
-                    <TextBlock Text="{Binding AngleX}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Camera.AngleX}" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Angle Y " />
-                    <TextBlock Text="{Binding AngleY}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Camera.AngleY}" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
 

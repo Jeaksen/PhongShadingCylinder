@@ -22,16 +22,10 @@ namespace PhongShadingCylinder
         private readonly Dictionary<Key, EventHandler> keyEventHandlers = new();
         private readonly Dictionary<Key, bool> keyEventsHandled = new();
         private readonly DispatcherTimer dispatcher = new DispatcherTimer();
-        private readonly LightSource lightSource;
         private readonly Cylinder cylinder;
         private readonly Mesh mesh = null;
         private readonly FillingAlgorithm fillingAlgorithm = new FillingAlgorithm();
         private WriteableBitmap lightingBitmap;
-
-
-
-        private Vector3 _cameraPosition = new Vector3(0, 80, -150);
-        private Vector3 _cameraRotation = new Vector3(0, 0, 0);
 
         private new int Width => (int)(base.Width - Options.ActualWidth);
         private new int Height => (int)base.Height;
@@ -44,127 +38,24 @@ namespace PhongShadingCylinder
         private float MoveCameraDistance => 2f;
         private float RotateDistanceMultiplier => 0.1f;
 
-        public float PositionX
-        {
-            get => _cameraPosition.X;
-            set
-            {
-                if (value != _cameraPosition.X)
-                {
-                    _cameraPosition.X = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float PositionY
-        {
-            get => _cameraPosition.Y;
-            set
-            {
-                if (value != _cameraPosition.Y)
-                {
-                    _cameraPosition.Y = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float PositionZ
-        {
-            get => _cameraPosition.Z;
-            set
-            {
-                if (value != _cameraPosition.Z)
-                {
-                    _cameraPosition.Z = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float AngleX
-        {
-            get => _cameraRotation.X;
-            set
-            {
-                if (value != _cameraRotation.X)
-                {
-                    _cameraRotation.X = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float AngleY
-        {
-            get => _cameraRotation.Y;
-            set
-            {
-                if (value != _cameraRotation.Y)
-                {
-                    _cameraRotation.Y = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float AngleZ
-        {
-            get => _cameraRotation.Z;
-            set
-            {
-                if (value != _cameraRotation.Z)
-                {
-                    _cameraRotation.Z = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        private Vector3 CameraPosition
-        {
-            get => _cameraPosition;
-            set
-            {
-                if (value != _cameraPosition)
-                {
-                    _cameraPosition = value;
-                    RaisePropertyChanged();
-                    RaisePropertyChanged("PositionX");
-                    RaisePropertyChanged("PositionY");
-                    RaisePropertyChanged("PositionZ");
-                }
-            }
-        }
-      
-        private Vector3 CameraRotation
-        {
-            get => _cameraRotation;
-            set
-            {
-                if (value != _cameraRotation)
-                {
-                    _cameraRotation = value;
-                    RaisePropertyChanged();
-                    RaisePropertyChanged("AngleX");
-                    RaisePropertyChanged("AngleY");
-                    RaisePropertyChanged("AngleZ");
-                }
-            }
-        }
-
+        public Camera Camera { get; set; }
+        public LightSource LightSource { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
             InitializeKeyEventHandlers();
             DataContext = this;
-            lightSource = new LightSource()
+            LightSource = new LightSource()
             {
                 Intensity = Colors.White,
                 Position = new Vector3(0, 50 , lightDistance),
                 AmbientColor = new Color() { R = 40, G = 40, B = 40, A = 255 }
+            };
+            Camera = new Camera()
+            {
+                Position = new Vector3(0, 80, -150),
+                Rotation = new Vector3(0, 0, 0)
             };
 
             cylinder = new Cylinder()
@@ -235,18 +126,6 @@ namespace PhongShadingCylinder
             }
         }
 
-        private void Scene_MouseMove(object sender, MouseEventArgs e)
-        {
-            //var position = e.GetPosition(this);
-            //if (e.RightButton == MouseButtonState.Pressed)
-            //{
-            //    var distance = Point.Subtract(position, previousMousePosition);
-            //    var vector = new Vector3(-(float)(distance.Y * RotateDistanceMultiplier), (float)(distance.X * RotateDistanceMultiplier), 0);
-            //    CameraRotation += vector;
-            //}
-            //previousMousePosition = position;
-        }
-
         private void Scene_KeyDown(object sender, KeyEventArgs e)
         {
             if (keyEventsHandled.TryGetValue(e.Key, out bool pressed) && !pressed)
@@ -265,13 +144,6 @@ namespace PhongShadingCylinder
             }
         }
 
-        private void Scene_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            //var vector = new Vector3(0, 0, e.Delta * ScrollDistanceMultiplier);
-            //var rotated = Rotator.Rotate(vector, CameraRotation);
-            //CameraPosition += rotated;
-        }
-
         private void RedrawScene(object sender, EventArgs e)
         {
             Scene.Children.Clear();
@@ -283,49 +155,46 @@ namespace PhongShadingCylinder
 
         private void MoveLightSource(object sender, EventArgs e)
         {
-            lightSource.Position.X = lightDistance * MathF.Sin(lightAngle);
-            lightSource.Position.Z = lightDistance * MathF.Cos(lightAngle);
+            LightSource.Position.X = lightDistance * MathF.Sin(lightAngle);
+            LightSource.Position.Z = lightDistance * MathF.Cos(lightAngle);
             lightAngle += 0.1f;
         }
+
+
 
         private void ClearLightingBitmap()
         {
             try
             {
-                // Reserve the back buffer for updates.
                 lightingBitmap.Lock();
 
                 unsafe
                 {
-                    // Get a pointer to the back buffer.
                     IntPtr pBackBuffer = lightingBitmap.BackBuffer;
-                    for (int i = 0; i < lightingBitmap.BackBufferStride * lightingBitmap.PixelHeight; i++)
+                    for (long i = 0; i < lightingBitmap.BackBufferStride * lightingBitmap.PixelHeight; i++)
                     {
-                        //*((int*)pBackBuffer) = int.MaxValue;
                         *((int*)pBackBuffer) = 0;
                         pBackBuffer += 1;
                     }
                 }
 
-                // Specify the area of the bitmap that changed.
                 lightingBitmap.AddDirtyRect(new Int32Rect(0, 0, Width, Height));
             }
             finally
             {
-                // Release the back buffer and make it available for display.
                 lightingBitmap.Unlock();
             }
         }
 
         private void DrawLightSource()
         {
-            var point = Project(lightSource.Position);
+            var point = Project(LightSource.Position);
             if (point.HasValue)
             {
                 var ellipse = new Ellipse();
                 ellipse.Width = 16;
                 ellipse.Height = 16;
-                ellipse.Fill = new SolidColorBrush(lightSource.Intensity);
+                ellipse.Fill = new SolidColorBrush(LightSource.Intensity);
                 ellipse.Stroke = Brushes.Black;
                 ellipse.StrokeThickness = 1;
                 Scene.Children.Add(ellipse);
@@ -354,27 +223,15 @@ namespace PhongShadingCylinder
                     interpolatedFillVertices.AddRange(fillingAlgorithm.Fill(triangle, Width, Height));
                 }
             }
-            DrawLighting(interpolatedFillVertices);
+            DrawLightingBitmap(interpolatedFillVertices);
         }
 
-        private bool IsTriangleVisible(Triangle triangle)
-        {
-            return IsVertexVisible(triangle.Vertices[0]) 
-                || IsVertexVisible(triangle.Vertices[1]) 
-                || IsVertexVisible(triangle.Vertices[2]);
-        }
-
-        private bool IsVertexVisible(Vertex vertex)
-        {
-            var toCamera = GetVectorToCamera(vertex.Position);
-            var dot = Vector3.Dot(toCamera, vertex.Normal);
-            return dot > 0;
-        }
+       
 
         private Vector3? Project(Vector3 vector)
         {
             var input = new Vector4(vector, 1);
-            var cameraTransformed = CameraTransformer.Transform(input, CameraPosition, CameraRotation);
+            var cameraTransformed = CameraTransformer.Transform(input, Camera.Position, Camera.Rotation);
             if (cameraTransformed.Z <= 0)
                 return null;
             var projected = PerspectiveProjector.Project(cameraTransformed, Width, Height);
@@ -382,21 +239,9 @@ namespace PhongShadingCylinder
             return result2d;
         }
 
-        private void DrawLighting(List<Vertex> interpolatedPoints)
+        private void DrawLightingBitmap(List<Vertex> interpolatedPoints)
         {
             interpolatedPoints = interpolatedPoints.Where(v => IsPointInBounds(v.ProjectedPosition)).ToList();
-
-            if (interpolatedPoints.Count == 0)
-                return;
-
-            int xMax = (int)interpolatedPoints.Max(p => p.ProjectedPosition.X);
-            int xMin = (int)interpolatedPoints.Min(p => p.ProjectedPosition.X);
-            int yMax = (int)interpolatedPoints.Max(p => p.ProjectedPosition.Y);
-            int yMin = (int)interpolatedPoints.Min(p => p.ProjectedPosition.Y);
-            int width = xMax - xMin + 1;
-            int height = yMax - yMin + 1;
-            if (width <= 0 || height <= 0)
-                return;
 
             try
             {
@@ -410,10 +255,11 @@ namespace PhongShadingCylinder
                     int x, y;
                     foreach (var vertex in interpolatedPoints)
                     {
-                        x = (int)(vertex.ProjectedPosition.X);
-                        y = (int)(vertex.ProjectedPosition.Y);
+                        x = (int)vertex.ProjectedPosition.X;
+                        y = (int)vertex.ProjectedPosition.Y;
                         IntPtr currentBuffer = pBackBuffer + y * lightingBitmap.BackBufferStride + x * 4;
                         color = CalculatePointIlumination(vertex.Position, vertex.Normal);
+
                         int color_data = color.R << 16; // R
                         color_data |= color.G << 8;   // G
                         color_data |= color.B << 0;   // B
@@ -431,21 +277,21 @@ namespace PhongShadingCylinder
 
         private Color CalculatePointIlumination(Vector3 position, Vector3 normal)
         {
-            var color = lightSource.AmbientColor;
-            var vectorToLight = GetVectorToLight(position);
+            var color = LightSource.AmbientColor;
+            var vectorToLight = LightSource.VectorTo(position);
             var lightNormalDotProduct = Vector3.Dot(normal, vectorToLight);
             if (lightNormalDotProduct > 0)
             {
                 //var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
-                color += CreateColor(lightSource.Intensity, cylinder.DiffuseReflectivity, lightNormalDotProduct);
+                color += CreateColor(LightSource.Intensity, cylinder.DiffuseReflectivity, lightNormalDotProduct);
 
                 var vectorReflectedLight = 2 * lightNormalDotProduct * normal - vectorToLight;
-                var vectorToCamera = GetVectorToCamera(position);
+                var vectorToCamera = Camera.VectorTo(position);
                 var reflectionDotResult = Vector3.Dot(vectorReflectedLight, vectorToCamera);
                 if (reflectionDotResult > 0)
                 {
                     //var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
-                    color += CreateColor(lightSource.Intensity, cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
+                    color += CreateColor(LightSource.Intensity, cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
                 }
             }
             color.Clamp();
@@ -462,22 +308,18 @@ namespace PhongShadingCylinder
             };
         }
 
-        private Vector3 GetNormalEndPoint(Vertex vertex)
+        private bool IsTriangleVisible(Triangle triangle)
         {
-            var scale = 10;
-            return new Vector3(vertex.Position.X + scale * vertex.Normal.X,
-                                vertex.Position.Y + scale * vertex.Normal.Y,
-                                vertex.Position.Z + scale * vertex.Normal.Z);
+            return IsVertexVisible(triangle.Vertices[0])
+                || IsVertexVisible(triangle.Vertices[1])
+                || IsVertexVisible(triangle.Vertices[2]);
         }
 
-        private Vector3 GetVectorToCamera(Vector3 position)
+        private bool IsVertexVisible(Vertex vertex)
         {
-            return Vector3.Normalize(CameraPosition - position);
-        }
-
-        private Vector3 GetVectorToLight(Vector3 position)
-        {
-            return Vector3.Normalize(lightSource.Position - position);
+            var toCamera = Camera.VectorTo(vertex.Position);
+            var dot = Vector3.Dot(toCamera, vertex.Normal);
+            return dot > 0;
         }
 
         private bool IsPointInBounds(Vector3 point)
@@ -487,68 +329,56 @@ namespace PhongShadingCylinder
 
 
 
+
+
         private void MoveCameraLeft(object sender, EventArgs e)
         {
-            var vector = new Vector3(-MoveCameraDistance, 0, 0);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.MoveLeft(MoveCameraDistance);
         }
 
         private void MoveCameraRight(object sender, EventArgs e)
         {
-            var vector = new Vector3(MoveCameraDistance, 0, 0);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.MoveRight(MoveCameraDistance);
         }
 
         private void MoveCameraUp(object sender, EventArgs e)
         {
-            var vector = new Vector3(0, MoveCameraDistance, 0);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.MoveUp(MoveCameraDistance);
         }
 
         private void MoveCameraDown(object sender, EventArgs e)
         {
-            var vector = new Vector3(0, -MoveCameraDistance, 0);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.MoveDown(MoveCameraDistance);
         }
-
 
         private void ZoomInCamera(object sender, EventArgs e)
         {
-            var vector = new Vector3(0, 0, scrollDistance);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.ZoomIn(scrollDistance);
         }
 
         private void ZoomOutCamera(object sender, EventArgs e)
         {
-            var vector = new Vector3(0, 0, -scrollDistance);
-            var rotated = Rotator.Rotate(vector, CameraRotation);
-            CameraPosition += rotated;
+            Camera.ZoomOut(scrollDistance);
         }
-
 
         private void RotateUpCamera(object sender, EventArgs e)
         {
-            AngleX -= rotateDistance;
+            Camera.RotateUp(rotateDistance);
         }
 
         private void RotateDownCamera(object sender, EventArgs e)
         {
-            AngleX += rotateDistance;
+            Camera.RotateDown(rotateDistance);
         }
 
         private void RotateLeftCamera(object sender, EventArgs e)
         {
-            AngleY += rotateDistance;
+            Camera.RotateLeft(rotateDistance);
         }
 
         private void RotateRightCamera(object sender, EventArgs e)
         {
-            AngleY -= rotateDistance;
+            Camera.RotateRight(rotateDistance);
         }
 
 

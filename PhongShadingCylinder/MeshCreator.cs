@@ -39,14 +39,13 @@ namespace PhongShadingCylinder
                 float x = -MathF.Sin(angle) * radius;
                 float z = MathF.Cos(angle) * radius;
 
-                Vector3 normal = new Vector3(x, 0, z);
-                Vector3 normalizedNormal = Vector3.Normalize(normal);
+                Vector3 normal = Vector3.Normalize(new Vector3(x, 0, z));
 
                 var bottomRimPoint = new Vector3(bottomCap.X + x, bottomCap.Y, bottomCap.Z + z);
                 var topRimPoint = new Vector3(topCap.X + x, topCap.Y, topCap.Z + z);
 
-                bottomCapSidePoints.Add(new Vertex(bottomRimPoint, normalizedNormal));
-                topCapSidePoints.Add(new Vertex(topRimPoint, normalizedNormal));
+                bottomCapSidePoints.Add(new Vertex(bottomRimPoint, normal));
+                topCapSidePoints.Add(new Vertex(topRimPoint, normal));
 
                 bottomCapRimPoints.Add(new Vertex(bottomRimPoint, bottomCapNormal));
                 topCapRimPoints.Add(new Vertex(topRimPoint, topCapNormal));
