@@ -1,4 +1,5 @@
 ﻿using PhongShadingCylinder.Transformations;
+using System;
 using System.ComponentModel;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,10 @@ namespace PhongShadingCylinder
     {
         private Vector3 position;
         private Vector3 rotation;
+        private Matrix4x4 matrix;
+
+        public int MaxXAngle { get; set; } = 60;
+        public int MaxYAngle { get; set; } = 360;
 
         public float PositionX
         {
@@ -18,6 +23,7 @@ namespace PhongShadingCylinder
                 if (value != position.X)
                 {
                     position.X = value;
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                 }
             }
@@ -31,6 +37,7 @@ namespace PhongShadingCylinder
                 if (value != position.Y)
                 {
                     position.Y = value;
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                 }
             }
@@ -44,6 +51,7 @@ namespace PhongShadingCylinder
                 if (value != position.Z)
                 {
                     position.Z = value;
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                 }
             }
@@ -56,7 +64,8 @@ namespace PhongShadingCylinder
             {
                 if (value != rotation.X)
                 {
-                    rotation.X = value;
+                    rotation.X = ClampAngle(value, MaxXAngle);
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                 }
             }
@@ -69,20 +78,8 @@ namespace PhongShadingCylinder
             {
                 if (value != rotation.Y)
                 {
-                    rotation.Y = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        public float AngleZ
-        {
-            get => rotation.Z;
-            set
-            {
-                if (value != rotation.Z)
-                {
-                    rotation.Z = value;
+                    rotation.Y = ClampAngle(value, MaxYAngle);
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                 }
             }
@@ -96,6 +93,7 @@ namespace PhongShadingCylinder
                 if (value != position)
                 {
                     position = value;
+                    RecalculateMatrix();
                     RaisePropertyChanged();
                     RaisePropertyChanged("PositionX");
                     RaisePropertyChanged("PositionY");
@@ -111,7 +109,9 @@ namespace PhongShadingCylinder
             {
                 if (value != rotation)
                 {
+                    
                     rotation = value;
+                    RecalculateMatrix(); 
                     RaisePropertyChanged();
                     RaisePropertyChanged("AngleX");
                     RaisePropertyChanged("AngleY");
@@ -119,6 +119,9 @@ namespace PhongShadingCylinder
                 }
             }
         }
+
+        public Matrix4x4 Matrix => matrix;
+
 
         public Vector3 VectorTo(Vector3 from) => Vector3.Normalize(position - from);
 
@@ -189,10 +192,34 @@ namespace PhongShadingCylinder
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        private float ClampAngle(float value, float maxAngle)
+        {
+            if (value >= 360)
+                value = value - 360;
+            else if (value < 0)
+                value = 360 + value;
+            
+            if (value < maxAngle || value > 360 - maxAngle)
+                return value;
+            float distanceLower = value - maxAngle;
+            float distanceUpper = 360 - maxAngle - value;
+            if (distanceLower > distanceUpper)
+                return 360 - maxAngle;
+            return maxAngle;
+
+        }
+
+        private void RecalculateMatrix()
+        {
+            matrix = CameraTransformer.TransformMatrix(Position, Rotation);
+        }
+
         private void RaisePropertyChanged([CallerMemberName] string propertyName = null)
         {
             if (PropertyChanged != null && propertyName != null)
+            {
                 PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
         }
 
     }

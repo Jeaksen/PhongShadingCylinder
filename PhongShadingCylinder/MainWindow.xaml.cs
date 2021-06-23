@@ -25,8 +25,9 @@ namespace PhongShadingCylinder
         private readonly Mesh mesh = null;
         private readonly FillingAlgorithm fillingAlgorithm = new FillingAlgorithm();
         private WriteableBitmap lightingBitmap;
+        private Matrix4x4 projectionMatrix;
 
-        private new int Width => (int)(base.Width - Options.ActualWidth);
+        private new int Width => (int)(base.Width - 3 * Options.ActualWidth / 4);
         private new int Height => (int)base.Height;
 
         private float lightAngle = 0;
@@ -75,6 +76,7 @@ namespace PhongShadingCylinder
 
         private void WindowInitialized(object sender, RoutedEventArgs e)
         {
+            RecalculateProjectionMatrix();
             InitializeDispatcher();
         }
 
@@ -123,6 +125,7 @@ namespace PhongShadingCylinder
                                         96,
                                         PixelFormats.Bgr32,
                                         null);
+                RecalculateProjectionMatrix();
             }
         }
 
@@ -157,7 +160,7 @@ namespace PhongShadingCylinder
         {
             LightSource.Position.X = LightDistance * MathF.Sin(lightAngle);
             LightSource.Position.Z = LightDistance * MathF.Cos(lightAngle);
-            //LightSource.Position.Y = LightDistance * MathF.Cos(lightAngle / 2);
+            LightSource.Position.Y = LightDistance * MathF.Cos(lightAngle / 2);
             lightAngle += 0.1f;
         }
 
@@ -219,8 +222,8 @@ namespace PhongShadingCylinder
                     triangle.Vertices[0].ProjectedPosition = p1.Value;
                     triangle.Vertices[1].ProjectedPosition = p2.Value;
                     triangle.Vertices[2].ProjectedPosition = p3.Value;
-
-                    interpolatedFillVertices.AddRange(fillingAlgorithm.CalculateInteriorVertices(triangle, Width, Height));
+                    if (IsProjectionVisible(triangle))
+                        interpolatedFillVertices.AddRange(fillingAlgorithm.CalculateInteriorVertices(triangle, Width, Height));
                 }
             }
             DrawLightingBitmap(interpolatedFillVertices);
@@ -229,11 +232,11 @@ namespace PhongShadingCylinder
         private Vector3? Project(Vector3 vector)
         {
             var input = new Vector4(vector, 1);
-            var cameraTransformed = CameraTransformer.Transform(input, Camera.Position, Camera.Rotation);
+            var cameraTransformed = Vector4.Transform(input, Camera.Matrix);
             if (cameraTransformed.Z <= 0)
                 return null;
-            var projected = PerspectiveProjector.Project(cameraTransformed, Width, Height);
-            var result2d = CoordinateTranslator.Translate3dTo2d(projected, Width, Height);
+            var projected = Vector4.Transform(cameraTransformed, projectionMatrix);
+            var result2d = CoordinateTranslator.Translate3dTo2dWithNormalization(projected, Width, Height);
             return result2d;
         }
 
@@ -316,12 +319,20 @@ namespace PhongShadingCylinder
             return dot > 0;
         }
 
+        private bool IsProjectionVisible(Triangle triangle)
+        {
+            return triangle.Vertices.Any(v => IsPointInBounds(v.ProjectedPosition));
+        }
+
         private bool IsPointInBounds(Vector3 point)
         {
             return point.X >= 0 && point.X < Width && point.Y >= 0 && point.Y < Height;
         }
 
-
+        private void RecalculateProjectionMatrix()
+        {
+            projectionMatrix = PerspectiveProjector.ProjectionMatrix(Width, Height);
+        }
 
 
 
