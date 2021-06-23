@@ -51,6 +51,8 @@ namespace PhongShadingCylinder
                         {
                             float coefficient = i / length;
                             var vertex = InterpolateVertex(leftInterpolatedBound, rightInterpolatedBound, coefficient);
+                            vertex.ProjectedPosition.X = leftInterpolatedBound.ProjectedPosition.X + i;
+                            vertex.ProjectedPosition.Y = y;
                             vertices.Add(vertex);
                         }
                     }
