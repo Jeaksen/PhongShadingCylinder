@@ -82,11 +82,10 @@ namespace PhongShadingCylinder
 
         private float GetInterpolationCoefficient(Vertex start, Vertex end, Vector3 projectedPosition, float lineCoefficient)
         {
-            if ((int)start.Position.Z == (int)end.Position.Z)
+            if (MathF.Abs(start.ProjectedPosition.Z - end.ProjectedPosition.Z) < MathF.Pow(10, -5))
                 return lineCoefficient;
+
             var denominator = 1 / end.ProjectedPosition.Z - 1 / start.ProjectedPosition.Z;
-            if (MathF.Abs(denominator) < 10 * float.Epsilon)
-                return lineCoefficient;
             var numerator = 1 / projectedPosition.Z - 1 / start.ProjectedPosition.Z;
             return numerator / denominator;
         }

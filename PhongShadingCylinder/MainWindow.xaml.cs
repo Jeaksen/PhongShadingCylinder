@@ -173,7 +173,7 @@ namespace PhongShadingCylinder
                     IntPtr pBackBuffer = lightingBitmap.BackBuffer;
                     for (long i = 0; i < lightingBitmap.BackBufferStride * lightingBitmap.PixelHeight; i++)
                     {
-                        *((int*)pBackBuffer) = 255;
+                        *((int*)pBackBuffer) = 0;
                         pBackBuffer += 1;
                     }
                 }
