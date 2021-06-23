@@ -65,8 +65,8 @@ namespace PhongShadingCylinder
                 Position = new Vector3(0, -70 / 2, 0),
                 DivisionPointsCount = 34,
                 DiffuseReflectivity = new float[] { 0.3f, 0.8f, 0.7f },
-                SpecularReflectivity = new float[] { 0.5f, 0.5f, 0.5f },
-                SpecularReflectionExponent = 1
+                SpecularReflectivity = new float[] { 0.9f, 0.9f, 0.9f },
+                SpecularReflectionExponent = 25
             };
             mesh = meshCreator.CreateCylinderMesh(Cylinder.Radius, Cylinder.Height, Cylinder.Position, Cylinder.DivisionPointsCount);
             Loaded += new RoutedEventHandler(WindowInitialized);

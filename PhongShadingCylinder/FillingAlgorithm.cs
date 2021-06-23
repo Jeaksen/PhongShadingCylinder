@@ -13,10 +13,10 @@ namespace PhongShadingCylinder
         {
             var vertices = new List<Vertex>();
             // very sofisticated clipping
-            if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -width
-                                        || v.ProjectedPosition.X > 2 * width
-                                        || v.ProjectedPosition.Y < -height
-                                        || v.ProjectedPosition.Y > 2 * height))
+            if (triangle.Vertices.Any(v => v.ProjectedPosition.X < -2 * width
+                                        || v.ProjectedPosition.X > 3 * width
+                                        || v.ProjectedPosition.Y < -2 * height
+                                        || v.ProjectedPosition.Y > 3 * height))
                 return vertices;
 
             var nodes = new List<EdgeTableNode>();
@@ -74,18 +74,20 @@ namespace PhongShadingCylinder
         {
             var projectedPosition = (end.ProjectedPosition - start.ProjectedPosition) * lineCoefficient + start.ProjectedPosition;
 
-            float u = GetInterpolationCoefficient(start.ProjectedPosition, end.ProjectedPosition, projectedPosition, lineCoefficient);
+            float u = GetInterpolationCoefficient(start, end, projectedPosition, lineCoefficient);
             var position = (end.Position - start.Position) * u + start.Position;
             var normal = Vector3.Normalize((end.Normal - start.Normal) * u + start.Normal);
             return new Vertex(position, normal, projectedPosition);
         }
 
-        private float GetInterpolationCoefficient(Vector3 start, Vector3 end, Vector3 projectedPosition, float lineCoefficient)
+        private float GetInterpolationCoefficient(Vertex start, Vertex end, Vector3 projectedPosition, float lineCoefficient)
         {
-            var denominator = 1 / end.Z - 1 / start.Z;
-            var numerator = 1 / projectedPosition.Z - 1 / start.Z;
-            if (MathF.Abs(denominator) < float.Epsilon || float.IsNaN(denominator) || float.IsNaN(numerator))
+            if ((int)start.Position.Z == (int)end.Position.Z)
                 return lineCoefficient;
+            var denominator = 1 / end.ProjectedPosition.Z - 1 / start.ProjectedPosition.Z;
+            if (MathF.Abs(denominator) < 10 * float.Epsilon)
+                return lineCoefficient;
+            var numerator = 1 / projectedPosition.Z - 1 / start.ProjectedPosition.Z;
             return numerator / denominator;
         }
 
