@@ -9,7 +9,7 @@ namespace PhongShadingCylinder
     {
         private static NodeSortXIncreasing xMinSort = new NodeSortXIncreasing();
 
-        public List<Vertex> Fill(Triangle triangle, int width, int height)
+        public List<Vertex> CalculateInteriorVertices(Triangle triangle, int width, int height)
         {
             var vertices = new List<Vertex>();
             // very sofisticated clipping
@@ -22,13 +22,11 @@ namespace PhongShadingCylinder
             var nodes = new List<EdgeTableNode>();
             var edgeTables = CreateEdgeTables(triangle);
 
-            // While moving the polygon there may be a situation in which all edges are horizontal
+            // While moving there may be a situation in which all edges are horizontal
             if (edgeTables.Values.Sum(l => l.Count) < 2)
                 return vertices;
 
-
             int yMax = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Max(p => p.Y);
-            int xMin = (int)triangle.Vertices.Select(v => v.ProjectedPosition).Min(p => p.X);
             int y = edgeTables.Min(p => p.Key);
             Vertex leftInterpolatedBound, rightInterpolatedBound;
 
@@ -46,15 +44,13 @@ namespace PhongShadingCylinder
                         leftInterpolatedBound = InterpolateVertex(nodes[0].Lower, nodes[0].Higher, nodes[0].StepLength * nodes[0].StepsMade);
                         rightInterpolatedBound = InterpolateVertex(nodes[1].Lower, nodes[1].Higher, nodes[1].StepLength * nodes[1].StepsMade);
 
-                        var length = rightInterpolatedBound.ProjectedPosition.X - leftInterpolatedBound.ProjectedPosition.X;
+                        float length = rightInterpolatedBound.ProjectedPosition.X - leftInterpolatedBound.ProjectedPosition.X;
                         length = length < 1 ? 1 : length;
-
                         // Interpolate between left and right
-                        for (int i = 0; i <= length; i++)
+                        for (int i = 0; i < length; i++)
                         {
                             float coefficient = i / length;
                             var vertex = InterpolateVertex(leftInterpolatedBound, rightInterpolatedBound, coefficient);
-
                             vertices.Add(vertex);
                         }
                     }
@@ -165,7 +161,7 @@ namespace PhongShadingCylinder
 
         public void OffsetByDx()
         {
-            xMin = xMin + dx;
+            xMin += dx;
         }
 
         private static (Vertex start, Vertex end) OrderVerticesProjectedYIncreasing(Vertex start, Vertex end) => start.ProjectedPosition.Y > end.ProjectedPosition.Y ? (end, start) : (start, end);

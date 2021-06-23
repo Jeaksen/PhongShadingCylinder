@@ -46,15 +46,16 @@ namespace PhongShadingCylinder
             InitializeComponent();
             InitializeKeyEventHandlers();
             DataContext = this;
+            var intenstity = Colors.White;
             LightSource = new LightSource()
             {
-                Intensity = Colors.White,
-                Position = new Vector3(0, 100, LightDistance),
-                AmbientColor = new Color() { R = 40, G = 40, B = 40, A = 255 }
+                Intensity = intenstity,
+                Position = new Vector3(0, LightDistance, LightDistance),
+                AmbientColor = intenstity * 0.05f
             };
             Camera = new Camera()
             {
-                Position = new Vector3(0, 50, -150),
+                Position = new Vector3(0, 0, -150),
                 Rotation = new Vector3(0, 0, 0)
             };
             Cylinder = new Cylinder()
@@ -64,8 +65,8 @@ namespace PhongShadingCylinder
                 Position = new Vector3(0, -70 / 2, 0),
                 DivisionPointsCount = 34,
                 DiffuseReflectivity = new float[] { 0.3f, 0.8f, 0.7f },
-                SpecularReflectivity = new float[] { 0.9f, 0.9f, 0.9f },
-                SpecularReflectionExponent = 25
+                SpecularReflectivity = new float[] { 0.5f, 0.5f, 0.5f },
+                SpecularReflectionExponent = 1
             };
             mesh = meshCreator.CreateCylinderMesh(Cylinder.Radius, Cylinder.Height, Cylinder.Position, Cylinder.DivisionPointsCount);
             Loaded += new RoutedEventHandler(WindowInitialized);
@@ -156,6 +157,7 @@ namespace PhongShadingCylinder
         {
             LightSource.Position.X = LightDistance * MathF.Sin(lightAngle);
             LightSource.Position.Z = LightDistance * MathF.Cos(lightAngle);
+            //LightSource.Position.Y = LightDistance * MathF.Cos(lightAngle / 2);
             lightAngle += 0.1f;
         }
 
@@ -171,7 +173,7 @@ namespace PhongShadingCylinder
                     IntPtr pBackBuffer = lightingBitmap.BackBuffer;
                     for (long i = 0; i < lightingBitmap.BackBufferStride * lightingBitmap.PixelHeight; i++)
                     {
-                        *((int*)pBackBuffer) = 0;
+                        *((int*)pBackBuffer) = 255;
                         pBackBuffer += 1;
                     }
                 }
@@ -218,7 +220,7 @@ namespace PhongShadingCylinder
                     triangle.Vertices[1].ProjectedPosition = p2.Value;
                     triangle.Vertices[2].ProjectedPosition = p3.Value;
 
-                    interpolatedFillVertices.AddRange(fillingAlgorithm.Fill(triangle, Width, Height));
+                    interpolatedFillVertices.AddRange(fillingAlgorithm.CalculateInteriorVertices(triangle, Width, Height));
                 }
             }
             DrawLightingBitmap(interpolatedFillVertices);
@@ -254,7 +256,7 @@ namespace PhongShadingCylinder
                         x = (int)vertex.ProjectedPosition.X;
                         y = (int)vertex.ProjectedPosition.Y;
                         IntPtr currentBuffer = pBackBuffer + y * lightingBitmap.BackBufferStride + x * 4;
-                        color = CalculatePointIlumination(vertex.Position, vertex.Normal);
+                        color = CalculatePointIllumination(vertex.Position, vertex.Normal);
 
                         int color_data = color.R << 16; // R
                         color_data |= color.G << 8;   // G
@@ -271,24 +273,20 @@ namespace PhongShadingCylinder
             }
         }
 
-        private Color CalculatePointIlumination(Vector3 position, Vector3 normal)
+        private Color CalculatePointIllumination(Vector3 position, Vector3 normal)
         {
             var color = LightSource.AmbientColor;
             var vectorToLight = LightSource.VectorTo(position);
             var lightNormalDotProduct = Vector3.Dot(normal, vectorToLight);
             if (lightNormalDotProduct > 0)
             {
-                //var diffusionColor = lightSource.Intensity * (cylinder.DiffuseReflectivity * lightNormalDotProduct);
                 color += CreateColor(LightSource.Intensity, Cylinder.DiffuseReflectivity, lightNormalDotProduct);
 
                 var vectorReflectedLight = 2 * lightNormalDotProduct * normal - vectorToLight;
                 var vectorToCamera = Camera.VectorTo(position);
                 var reflectionDotResult = Vector3.Dot(vectorReflectedLight, vectorToCamera);
                 if (reflectionDotResult > 0)
-                {
-                    //var reflectionColor = lightSource.Intensity * (cylinder.SpecularReflectivity * MathF.Pow(reflectionDotResult, cylinder.SpecularReflectionExponent));
                     color += CreateColor(LightSource.Intensity, Cylinder.SpecularReflectivity, MathF.Pow(reflectionDotResult, Cylinder.SpecularReflectionExponent));
-                }
             }
             color.Clamp();
             return color;
